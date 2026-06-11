@@ -1,0 +1,67 @@
+import { useEffect, useState, Suspense, lazy } from 'react';
+import Papa from 'papaparse';
+import { apiClient } from '../../../api/client';
+import { DataTable } from './DataTable';
+
+const MonacoViewer = lazy(() =>
+  import('./MonacoViewer').then(m => ({ default: m.MonacoViewer })),
+);
+
+interface Props { convId: number; path: string }
+
+interface Parsed {
+  columns: string[];
+  rows: (string | number | null)[][];
+  total: number;
+}
+
+export function CsvViewer({ convId, path }: Props) {
+  const [state, setState] = useState<
+    { kind: 'loading' } | { kind: 'ok'; data: Parsed } | { kind: 'error'; msg: string }
+  >({ kind: 'loading' });
+
+  useEffect(() => {
+    let cancelled = false;
+    setState({ kind: 'loading' });
+    apiClient.readFsText(convId, path).then(text => {
+      const result = Papa.parse<string[]>(text, { skipEmptyLines: true });
+      if (cancelled) return;
+      if (result.errors.length > 0 && result.data.length === 0) {
+        setState({ kind: 'error', msg: result.errors[0].message });
+        return;
+      }
+      const rows = result.data;
+      const columns = (rows[0] ?? []).map(c => String(c));
+      const body = rows.slice(1) as (string | number | null)[][];
+      setState({ kind: 'ok', data: { columns, rows: body, total: body.length } });
+    }).catch(e => {
+      if (!cancelled) setState({ kind: 'error', msg: String(e) });
+    });
+    return () => { cancelled = true; };
+  }, [convId, path]);
+
+  if (state.kind === 'loading') {
+    return <div className="p-4 text-xs font-mono text-ink/45">Parsing CSV…</div>;
+  }
+  if (state.kind === 'error') {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="px-3 py-1.5 text-[13px] font-mono text-block-coral border-b border-hairline-soft bg-surface-soft/70">
+          CSV parse failed: {state.msg}. Showing raw text.
+        </div>
+        <div className="flex-1">
+          <Suspense fallback={<div className="p-4 text-xs font-mono text-ink/45">Loading…</div>}>
+            <MonacoViewer convId={convId} path={path} />
+          </Suspense>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <DataTable
+      columns={state.data.columns}
+      rows={state.data.rows}
+      truncatedFrom={state.data.total}
+    />
+  );
+}

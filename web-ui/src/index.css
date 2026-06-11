@@ -1,0 +1,279 @@
+/* Figma-inspired design system. See web-ui/DESIGN.md. */
+
+@import url('https://rsms.me/inter/inter.css');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Mono core */
+  --ink: 0 0% 0%;
+  --canvas: 0 0% 100%;
+  --inverse-canvas: 0 0% 0%;
+  --inverse-ink: 0 0% 100%;
+
+  /* Surface */
+  --surface-soft: 40 22% 96%;
+  --hairline: 0 0% 12%;
+  --hairline-soft: 0 0% 88%;
+
+  /* Color-block palette (approximations of Figma's marketing pastels) */
+  --block-lime:  72 70% 78%;
+  --block-lilac: 261 60% 88%;
+  --block-cream: 38 60% 92%;
+  --block-mint:  150 50% 86%;
+  --block-pink:  340 80% 90%;
+  --block-coral:   8 80% 78%;
+  --block-navy:  238 60% 22%;
+
+  /* Accent + semantic */
+  --accent-magenta: 330 90% 55%;
+  --semantic-success: 142 68% 28%;
+  --overlay-scrim: 0 0% 0%;
+}
+
+@layer base {
+  html, body {
+    font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'kern' 1, 'cv11' 1, 'ss01' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: hsl(var(--canvas));
+    color: hsl(var(--ink));
+    font-weight: 320;
+    overscroll-behavior-y: none;
+  }
+
+  /* Universal hover/focus smoothing — every interactive element inherits a
+     consistent editorial easing without per-component opt-in. */
+  button, a, input, textarea, select, [role="button"] {
+    transition-property: background-color, border-color, color, fill, stroke, transform, box-shadow, opacity;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 180ms;
+  }
+
+  button, [role="button"] { cursor: pointer; }
+  button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
+
+  ::selection {
+    background-color: hsl(var(--ink));
+    color: hsl(var(--inverse-ink));
+  }
+
+  /* Editorial display type — tight tracking baked into the size tokens; this
+     just nudges the variable axis to the lighter weight Figma uses. */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 540;
+  }
+}
+
+/* Mono eyebrow + caption helper */
+.eyebrow-mono {
+  font-family: 'JetBrains Mono', SF Mono, Menlo, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.54px;
+  font-size: 12px;
+  font-weight: 500;
+  color: hsl(var(--ink));
+}
+
+/* Scrollbar — minimal hairline */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--hairline-soft));
+  border-radius: 9999px;
+}
+*:hover > ::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--hairline) / 0.5);
+}
+
+:focus-visible {
+  outline: 2px solid hsl(var(--ink));
+  outline-offset: 2px;
+}
+
+/* Override Tailwind's default animation timing with editorial cubic-bezier so
+   any pre-existing `animate-slide-up`, `animate-fade-in`, or `animate-scale-in`
+   call site immediately feels smoother. */
+.animate-slide-up   { animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important; animation-duration: 420ms !important; }
+.animate-fade-in    { animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important; animation-duration: 240ms !important; }
+.animate-scale-in   { animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important; animation-duration: 260ms !important; }
+.animate-content-fade { animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-up,
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-content-fade,
+  .animate-breathe,
+  .animate-spin-slow,
+  .animate-shimmer,
+  .animate-border-breathe,
+  .animate-pulse-dot {
+    animation: none !important;
+  }
+  html { scroll-behavior: auto; }
+}
+
+/* Inline code on light surfaces — hairline-bordered tile */
+code {
+  font-family: 'JetBrains Mono', SF Mono, Menlo, monospace;
+  font-size: 0.92em;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: hsl(var(--surface-soft));
+  color: hsl(var(--ink));
+  border: 1px solid hsl(var(--hairline-soft));
+}
+
+.prose pre code,
+.prose-xs pre code {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  color: hsl(var(--inverse-ink));
+}
+
+/* Code block — inverse-canvas inset per DESIGN.md "code blocks become black
+   surfaces with white mono text". Scoped to .prose so raw <pre> used for
+   whitespace (ThinkingBlock, tool output) keeps its parent surface. */
+.prose pre,
+.prose-xs pre {
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  background: hsl(var(--inverse-canvas));
+  color: hsl(var(--inverse-ink));
+  font-family: 'JetBrains Mono', SF Mono, Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.55;
+  border: 1px solid hsl(var(--ink));
+}
+
+/* Prose */
+.prose { color: hsl(var(--ink)); font-weight: 320; }
+.prose p { margin-bottom: 1rem; }
+.prose ul, .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+.prose li { margin-bottom: 0.4rem; }
+.prose strong { font-weight: 540; color: hsl(var(--ink)); }
+.prose a {
+  color: hsl(var(--ink));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.prose a:hover { text-decoration-thickness: 2px; }
+.prose blockquote {
+  border-left: 2px solid hsl(var(--ink));
+  padding-left: 1rem;
+  font-style: italic;
+  color: hsl(var(--ink));
+}
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  font-weight: 540;
+  letter-spacing: -0.26px;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Compact prose for tool outputs, etc. */
+.prose-xs { color: hsl(var(--ink)); font-size: 14px; font-weight: 330; }
+.prose-xs p { margin-bottom: 0.5rem; line-height: 1.5; }
+.prose-xs ul, .prose-xs ol { margin-bottom: 0.5rem; padding-left: 1.25rem; }
+.prose-xs li { margin-bottom: 0.2rem; line-height: 1.5; }
+.prose-xs strong { font-weight: 540; color: hsl(var(--ink)); }
+.prose-xs a { color: hsl(var(--ink)); text-decoration: underline; text-underline-offset: 2px; }
+.prose-xs blockquote {
+  border-left: 2px solid hsl(var(--ink));
+  padding-left: 0.75rem;
+  font-style: italic;
+  color: hsl(var(--ink));
+}
+.prose-xs h1, .prose-xs h2, .prose-xs h3 {
+  font-weight: 540;
+  font-size: 15px;
+  margin-bottom: 0.5rem;
+  color: hsl(var(--ink));
+}
+.prose-xs pre {
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.prose-xs code {
+  font-size: 12.5px;
+  padding: 1px 5px;
+}
+
+/* When prose sits inside a color block, swap nothing — ink already reads on every pastel. */
+.color-block .prose, .color-block .prose-xs { color: hsl(var(--ink)); }
+
+/* When prose sits inside the navy block, invert. */
+.color-block-navy .prose,
+.color-block-navy .prose-xs,
+.color-block-navy { color: hsl(var(--inverse-ink)); }
+.color-block-navy .prose a,
+.color-block-navy .prose-xs a { color: hsl(var(--inverse-ink)); }
+
+/* Skeleton shimmer */
+.skeleton-shimmer {
+  background: linear-gradient(90deg, hsl(var(--surface-soft)) 25%, hsl(var(--hairline-soft)) 50%, hsl(var(--surface-soft)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.thinking-shimmer {
+  background: linear-gradient(90deg, transparent 25%, hsl(var(--ink) / 0.06) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+
+/* Animated link underline */
+.link-underline { position: relative; text-decoration: none !important; }
+.link-underline::after {
+  content: ''; position: absolute; bottom: -1px; left: 0;
+  width: 0%; height: 1px; background: currentColor;
+  transition: width 0.25s ease;
+}
+.link-underline:hover::after { width: 100%; }
+
+.hover-lift:hover { transform: translateY(-1px); }
+.hover-scale:hover { transform: scale(1.02); }
+.hover-scale-pill:hover { transform: scale(1.03); }
+.delete-glow:hover {
+  box-shadow: 0 0 8px hsl(var(--block-coral) / 0.5);
+  transform: scale(1.08);
+}
+
+.pulse-dots { display: inline-flex; gap: 4px; align-items: center; }
+.pulse-dots span {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: hsl(var(--ink));
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+.pulse-dots span:nth-child(2) { animation-delay: 0.2s; }
+.pulse-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+.tool-executing {
+  border-left: 3px solid hsl(var(--ink));
+  animation: shimmer 2s ease-in-out infinite;
+  background: linear-gradient(90deg, hsl(var(--ink) / 0.03) 0%, transparent 30%);
+  background-size: 200% 100%;
+}
+
+.code-hover pre { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.code-hover pre:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 12px hsl(var(--ink) / 0.18);
+}
