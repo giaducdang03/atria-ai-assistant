@@ -311,9 +311,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }));
 
     try {
+      const persona = getSessionState(get().sessionStates, sessionId).selectedPersona ?? null;
       wsClient.send({
         type: 'query',
-        data: { message: content, session_id: sessionId },
+        data: {
+          message: content,
+          session_id: sessionId,
+          ...(persona ? { persona_name: persona } : {}),
+        },
       });
     } catch (error) {
       set(state => ({
