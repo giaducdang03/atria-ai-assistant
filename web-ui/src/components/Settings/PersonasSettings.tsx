@@ -93,106 +93,109 @@ export function PersonasSettings() {
   }
 
   return (
-    <div className="space-y-4 max-w-4xl">
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-lg font-semibold text-ink">Personas</h2>
+        <p className="text-sm text-ink/60 mt-1">Create and manage custom agent personalities</p>
+      </div>
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
           {error}
         </div>
       )}
 
-      <div className="flex gap-4">
-        {/* Personas List */}
-        <div className="w-56">
-          <div className="border border-hairline rounded-lg overflow-hidden flex flex-col bg-canvas">
-            <div className="bg-surface-soft px-4 py-3 border-b border-hairline flex items-center justify-between">
-              <h3 className="font-medium text-ink text-sm">Personas</h3>
-              <button
-                onClick={() => {
-                  setSelectedPersona(null);
-                  setIsEditing(true);
-                }}
-                className="px-3 py-1.5 bg-ink text-inverse-ink text-xs rounded-full hover:bg-ink/90 font-medium transition-colors"
-              >
-                New
-              </button>
-            </div>
+      <div className="grid grid-cols-3 gap-6">
+        {/* Left: Personas List */}
+        <div className="col-span-1 border border-hairline rounded-lg bg-canvas flex flex-col">
+          <div className="bg-surface-soft px-4 py-3 border-b border-hairline flex items-center justify-between">
+            <h3 className="font-medium text-ink text-sm">All Personas</h3>
+            <button
+              onClick={() => {
+                setSelectedPersona(null);
+                setIsEditing(true);
+              }}
+              className="px-3 py-1.5 bg-ink text-inverse-ink text-xs rounded-full hover:bg-ink/90 font-medium transition-colors"
+            >
+              + New
+            </button>
+          </div>
 
-            <div className="flex-1 overflow-y-auto max-h-96">
-              {personas.length === 0 ? (
-                <div className="p-4 text-center text-ink/50 text-xs">
-                  No personas yet
-                </div>
-              ) : (
-                <div className="divide-y divide-hairline">
-                  {personas.map(p => (
-                    <button
-                      key={p.name}
-                      onClick={() => {
-                        setSelectedPersona(p);
-                        setIsEditing(false);
-                      }}
-                      className={`w-full px-4 py-3 text-left text-sm transition-colors ${
-                        selectedPersona?.name === p.name
-                          ? 'bg-ink/5 text-ink font-medium'
-                          : 'text-ink hover:bg-surface-soft'
-                      }`}
-                    >
-                      <div className="truncate">{p.name}</div>
-                      <div className="text-xs text-ink/50 truncate">{p.system_prompt.substring(0, 40)}...</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="flex-1 overflow-y-auto divide-y divide-hairline">
+            {personas.length === 0 ? (
+              <div className="p-6 text-center">
+                <p className="text-sm text-ink/50">No personas yet</p>
+                <p className="text-xs text-ink/40 mt-2">Click "+ New" to create one</p>
+              </div>
+            ) : (
+              personas.map(p => (
+                <button
+                  key={p.name}
+                  onClick={() => {
+                    setSelectedPersona(p);
+                    setIsEditing(false);
+                  }}
+                  className={`w-full px-4 py-3 text-left transition-colors ${
+                    selectedPersona?.name === p.name
+                      ? 'bg-ink/5 border-l-2 border-l-ink'
+                      : 'hover:bg-surface-soft border-l-2 border-l-transparent'
+                  }`}
+                >
+                  <div className="font-medium text-sm text-ink truncate">{p.name}</div>
+                  <div className="text-xs text-ink/50 truncate mt-0.5">{p.system_prompt.substring(0, 40)}...</div>
+                </button>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Editor */}
+        {/* Right: Editor or View */}
         {(selectedPersona || isEditing) && (
-          <div className="flex-1">
-            <div className="border border-hairline rounded-lg overflow-hidden flex flex-col bg-canvas">
-              <div className="bg-surface-soft px-4 py-3 border-b border-hairline flex items-center justify-between">
-                <h3 className="font-medium text-ink text-sm">
-                  {isEditing ? 'Edit' : 'View'} Persona
-                </h3>
-                {!isEditing && selectedPersona && (
-                  <button
-                    onClick={() => handleDeletePersona(selectedPersona.name)}
-                    className="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-full hover:bg-red-100 font-medium transition-colors"
-                  >
-                    Delete
-                  </button>
-                )}
-              </div>
+          <div className="col-span-2 border border-hairline rounded-lg bg-canvas flex flex-col">
+            <div className="bg-surface-soft px-4 py-3 border-b border-hairline flex items-center justify-between">
+              <h3 className="font-medium text-ink text-sm">
+                {isEditing ? '✏️ Edit Persona' : '👁️ View Persona'}
+              </h3>
+              {!isEditing && selectedPersona && (
+                <button
+                  onClick={() => handleDeletePersona(selectedPersona.name)}
+                  className="px-3 py-1.5 text-red-600 text-xs rounded-full hover:bg-red-50 font-medium transition-colors border border-red-200"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
 
-              <div className="flex-1 overflow-y-auto max-h-96">
-                {isEditing ? (
-                  <PersonaForm
-                    persona={selectedPersona}
-                    onSave={handleSavePersona}
-                    onCancel={() => setIsEditing(false)}
-                  />
-                ) : selectedPersona ? (
-                  <div className="p-6 space-y-4">
-                    <div>
-                      <h4 className="text-xs font-medium text-ink/50 uppercase mb-1">Name</h4>
-                      <p className="text-sm text-ink">{selectedPersona.name}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-medium text-ink/50 uppercase mb-2">System Prompt</h4>
-                      <pre className="text-xs bg-surface-soft p-3 rounded-lg overflow-auto max-h-64 text-ink whitespace-pre-wrap">
+            <div className="flex-1 overflow-y-auto">
+              {isEditing ? (
+                <PersonaForm
+                  persona={selectedPersona}
+                  onSave={handleSavePersona}
+                  onCancel={() => setIsEditing(false)}
+                />
+              ) : selectedPersona ? (
+                <div className="p-6 space-y-6">
+                  <div>
+                    <h4 className="text-xs font-semibold text-ink/60 uppercase tracking-wide mb-2">Name</h4>
+                    <p className="text-base font-medium text-ink">{selectedPersona.name}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold text-ink/60 uppercase tracking-wide mb-3">System Prompt</h4>
+                    <div className="bg-surface-soft border border-hairline rounded-lg p-4 overflow-auto max-h-96">
+                      <pre className="text-xs text-ink whitespace-pre-wrap font-mono leading-relaxed">
                         {selectedPersona.system_prompt}
                       </pre>
                     </div>
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="w-full px-4 py-2 bg-ink text-inverse-ink rounded-full hover:bg-ink/90 font-medium text-sm transition-colors"
-                    >
-                      Edit
-                    </button>
                   </div>
-                ) : null}
-              </div>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="w-full px-4 py-2 bg-ink text-inverse-ink rounded-full hover:bg-ink/90 font-medium text-sm transition-colors"
+                  >
+                    Edit Persona
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         )}

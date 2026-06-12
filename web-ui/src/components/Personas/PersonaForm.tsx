@@ -48,51 +48,53 @@ export function PersonaForm({ persona, onSave, onCancel }: PersonaFormProps) {
   };
 
   return (
-    <div className="p-6 overflow-y-auto h-full">
-      <div className="space-y-4">
-        {/* Persona Name */}
-        <div>
-          <label className="block text-sm font-medium text-ink mb-2">
-            Persona Name
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., Code Expert, Creative Writer"
-            className="w-full px-3 py-2 border border-hairline rounded-lg focus:outline-none focus:ring-2 focus:ring-ink/20 bg-canvas text-ink"
-          />
-        </div>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="space-y-5">
+          {/* Persona Name */}
+          <div>
+            <label className="block text-xs font-semibold text-ink/60 uppercase tracking-wide mb-2">
+              Persona Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Code Expert, Creative Writer"
+              className="w-full px-3 py-2 border border-hairline rounded-lg focus:outline-none focus:ring-2 focus:ring-ink/20 bg-canvas text-ink placeholder:text-ink/40"
+            />
+          </div>
 
-        {/* System Prompt */}
-        <div>
-          <label className="block text-sm font-medium text-ink mb-2">
-            System Prompt
-          </label>
-          <textarea
-            value={systemPrompt}
-            onChange={(e) => setSystemPrompt(e.target.value)}
-            placeholder="Enter custom system prompt for this persona..."
-            className="w-full px-3 py-2 border border-hairline rounded-lg focus:outline-none focus:ring-2 focus:ring-ink/20 bg-canvas text-ink resize-none font-mono text-xs"
-            rows={12}
-          />
+          {/* System Prompt */}
+          <div>
+            <label className="block text-xs font-semibold text-ink/60 uppercase tracking-wide mb-2">
+              System Prompt
+            </label>
+            <textarea
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+              placeholder="Enter custom system prompt for this persona..."
+              className="w-full px-3 py-2 border border-hairline rounded-lg focus:outline-none focus:ring-2 focus:ring-ink/20 bg-canvas text-ink resize-none font-mono text-xs leading-relaxed placeholder:text-ink/40"
+              rows={10}
+            />
+          </div>
         </div>
+      </div>
 
-        {/* Save/Cancel buttons */}
-        <div className="flex gap-3 pt-2">
-          <button
-            onClick={handleSave}
-            className="flex-1 px-4 py-2 bg-ink text-inverse-ink rounded-full hover:bg-ink/90 font-medium transition-colors"
-          >
-            Save
-          </button>
-          <button
-            onClick={onCancel}
-            className="flex-1 px-4 py-2 border border-hairline text-ink rounded-full hover:bg-surface-soft font-medium transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
+      {/* Save/Cancel buttons - sticky at bottom */}
+      <div className="border-t border-hairline bg-surface-soft px-6 py-3 flex gap-3">
+        <button
+          onClick={handleSave}
+          className="flex-1 px-4 py-2 bg-ink text-inverse-ink rounded-full hover:bg-ink/90 font-medium text-sm transition-colors"
+        >
+          Save
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex-1 px-4 py-2 border border-hairline text-ink rounded-full hover:bg-canvas font-medium text-sm transition-colors"
+        >
+          Cancel
+        </button>
       </div>
     </div>
   );
