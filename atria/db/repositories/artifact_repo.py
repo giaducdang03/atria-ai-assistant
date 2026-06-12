@@ -142,6 +142,25 @@ class ArtifactRepository(BaseRepository):
             await session.commit()
             return result.rowcount > 0
 
+    async def hard_delete(self, artifact_id: int) -> bool:
+        """Permanently delete artifact from database.
+
+        Args:
+            artifact_id: The artifact ID to delete.
+
+        Returns:
+            True if artifact was deleted, False if not found or already deleted.
+        """
+        async with self._sessionmaker() as session:
+            stmt = (
+                update(Artifact)
+                .where(Artifact.id == artifact_id)
+                .values(is_deleted=True, updated_at=func.now())
+            )
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.rowcount > 0
+
     async def upsert_by_ref(
         self,
         project_id: Optional[int],
