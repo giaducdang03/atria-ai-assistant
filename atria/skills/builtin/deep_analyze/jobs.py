@@ -20,9 +20,13 @@ class AnalyzeJob:
     status: str = "pending"
     error: Optional[str] = None
     profile: Dict[str, Any] = field(default_factory=dict)
+    profile_rich: Dict[str, Any] = field(default_factory=dict)
     plan: Dict[str, Any] = field(default_factory=dict)
     sub_tables: List[Dict[str, Any]] = field(default_factory=list)
     charts: List[Dict[str, Any]] = field(default_factory=list)
+    sections: List[Dict[str, Any]] = field(default_factory=list)
+    exec_summary: Optional[str] = None
+    key_findings: Optional[str] = None
     report_path: Optional[str] = None
     cancel_event: threading.Event = field(default_factory=threading.Event)
     _done_event: threading.Event = field(default_factory=threading.Event)
