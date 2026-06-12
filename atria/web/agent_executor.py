@@ -61,6 +61,7 @@ class AgentExecutor:
         *,
         session_id: str,
         session: Any,
+        persona_name: str | None = None,
     ) -> None:
         """Execute query and stream results via WebSocket.
 
@@ -69,6 +70,7 @@ class AgentExecutor:
             ws_manager: WebSocket manager for broadcasting
             session_id: Session ID for scoping this execution
             session: Pre-loaded Session object (avoids mutating current_session)
+            persona_name: Optional persona name to prepend its system prompt
         """
         try:
             # Mark session as running
@@ -96,14 +98,19 @@ class AgentExecutor:
 
             # Run agent in thread pool to avoid blocking event loop
             loop = asyncio.get_event_loop()
+            import functools
+
             response = await loop.run_in_executor(
                 self.executor,
-                self._run_agent_sync,
-                message,
-                ws_manager,
-                loop,
-                session_id,
-                session,
+                functools.partial(
+                    self._run_agent_sync,
+                    message,
+                    ws_manager,
+                    loop,
+                    session_id,
+                    session,
+                    persona_name=persona_name,
+                ),
             )
 
             # ReactExecutor handles step-by-step persistence — just log the result
@@ -177,6 +184,8 @@ class AgentExecutor:
         loop: asyncio.AbstractEventLoop,
         session_id: str,
         session: Any,
+        *,
+        persona_name: str | None = None,
     ) -> Dict[str, Any]:
         """Run agent synchronously in thread pool using ReactExecutor.
 
@@ -186,6 +195,7 @@ class AgentExecutor:
             loop: Event loop for async operations
             session_id: Session ID for scoping
             session: Pre-loaded Session object
+            persona_name: Optional persona name to prepend its system prompt
 
         Returns:
             Dict with summary, error, latency_ms
@@ -347,6 +357,13 @@ class AgentExecutor:
         # Inject system prompt (TUI path does this via query_enhancer.prepare_messages)
         # Append working directory context so the agent knows where to write files.
         system_content = agent.system_prompt
+        # Prepend persona system prompt if one was selected for this run
+        if persona_name:
+            from atria.core.personas.manager import PersonaManager
+
+            persona = PersonaManager().get_persona(persona_name)
+            if persona:
+                system_content = persona.system_prompt + "\n\n" + system_content
         wd_str = str(working_dir)
         if wd_str and wd_str not in system_content:
             system_content += (
