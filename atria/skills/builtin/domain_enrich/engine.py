@@ -40,7 +40,20 @@ def _generate_queries(
         if start >= 0 and end > start:
             parsed = json.loads(raw[start:end])
             if isinstance(parsed, list):
-                return [str(q) for q in parsed[:3] if q]
+                queries = [
+                    str(q).strip()
+                    for q in parsed[:3]
+                    if isinstance(q, str) and str(q).strip()
+                ]
+                if queries:
+                    defaults = [
+                        topic,
+                        f"{topic} metrics",
+                        f"{topic} best practices",
+                    ]
+                    while len(queries) < 3:
+                        queries.append(defaults[len(queries)])
+                    return queries
     except Exception:
         logger.debug("Query generation failed, using defaults for %r", topic)
     return [topic, f"{topic} metrics", f"{topic} best practices"]
@@ -136,4 +149,5 @@ def run_enrich(
         "artifact_path": artifact_path,
         "summary": summary[:300],
         "sources": [r.get("url", "") for r in all_results if r.get("url")],
+        "error": None,
     }
