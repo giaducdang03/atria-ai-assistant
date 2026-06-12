@@ -16,7 +16,6 @@ interface PersonaFormProps {
   persona: Persona | null;
   onSave: (persona: Persona) => void;
   onCancel: () => void;
-  compact?: boolean;
 }
 
 const SECTION_OPTIONS = [
@@ -38,7 +37,7 @@ const SUBAGENT_OPTIONS = [
   'subagent-web-generator',
 ];
 
-export function PersonaForm({ persona, onSave, onCancel, compact = false }: PersonaFormProps) {
+export function PersonaForm({ persona, onSave, onCancel }: PersonaFormProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [agentTone, setAgentTone] = useState('');

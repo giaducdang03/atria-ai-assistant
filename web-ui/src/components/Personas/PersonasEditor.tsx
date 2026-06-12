@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { apiClient } from '../../api/client';
 import { PersonaForm } from './PersonaForm';
 import { PersonaList } from './PersonaList';
 import { PersonaPreview } from './PersonaPreview';
@@ -22,7 +21,6 @@ export function PersonasEditor() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     loadPersonas();

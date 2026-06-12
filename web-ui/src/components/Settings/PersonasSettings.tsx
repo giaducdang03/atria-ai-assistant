@@ -174,7 +174,6 @@ export function PersonasSettings() {
                     persona={selectedPersona}
                     onSave={handleSavePersona}
                     onCancel={() => setIsEditing(false)}
-                    compact
                   />
                 ) : (
                   <PersonaPreview persona={selectedPersona} />
