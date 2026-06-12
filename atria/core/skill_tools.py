@@ -145,6 +145,17 @@ class SkillToolLoader:
         pkg_name = f"atria_skills.{skill_dir.name.replace('-', '_')}"
         import sys
 
+        # Ensure the top-level `atria_skills` namespace package exists so that
+        # relative imports inside sibling modules (e.g. engine.py → search.py)
+        # can resolve their grandparent package correctly.
+        root_pkg = "atria_skills"
+        if root_pkg not in sys.modules:
+            root_spec = importlib.util.spec_from_loader(root_pkg, loader=None)
+            assert root_spec is not None
+            root_mod = importlib.util.module_from_spec(root_spec)
+            root_mod.__path__ = [str(skill_dir.parent)]  # type: ignore[attr-defined]
+            sys.modules[root_pkg] = root_mod
+
         if pkg_name not in sys.modules:
             parent_spec = importlib.util.spec_from_loader(pkg_name, loader=None)
             assert parent_spec is not None
