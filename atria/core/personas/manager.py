@@ -92,6 +92,8 @@ class PersonaManager:
             Path to saved file
         """
         persona_file = self.personas_dir / f"{persona.name}.json"
+        if not str(persona_file.resolve()).startswith(str(self.personas_dir.resolve())):
+            raise ValueError(f"Invalid persona name: {persona.name!r}")
         persona_file.write_text(
             json.dumps(persona.to_dict(), indent=2),
             encoding="utf-8",
@@ -108,6 +110,8 @@ class PersonaManager:
             True if deleted, False if not found
         """
         persona_file = self.personas_dir / f"{name}.json"
+        if not str(persona_file.resolve()).startswith(str(self.personas_dir.resolve())):
+            raise ValueError(f"Invalid persona name: {name!r}")
         if not persona_file.exists():
             return False
         persona_file.unlink()
