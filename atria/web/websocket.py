@@ -112,6 +112,7 @@ class WebSocketManager:
 
         message = data.get("data", {}).get("message")
         session_id = data.get("data", {}).get("session_id")
+        persona_name = data.get("data", {}).get("persona_name")
 
         if not message:
             await self.send_message(
@@ -241,7 +242,9 @@ class WebSocketManager:
             state._agent_executor = AgentExecutor(state)
         executor = state._agent_executor
         asyncio.create_task(
-            executor.execute_query(message, self, session_id=session_id, session=session)
+            executor.execute_query(
+                message, self, session_id=session_id, session=session, persona_name=persona_name
+            )
         )
 
     async def _handle_approval(self, websocket: WebSocket, data: Dict[str, Any]):
