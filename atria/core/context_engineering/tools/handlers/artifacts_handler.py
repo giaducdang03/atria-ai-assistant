@@ -30,13 +30,8 @@ class ArtifactsToolHandler:
     # Maximum file size: 10MB
     _MAX_FILE_SIZE = 10 * 1024 * 1024
 
-    def __init__(self, context: ToolExecutionContext) -> None:
-        """Initialize the artifacts handler.
-
-        Args:
-            context: Tool execution context with session manager and other services
-        """
-        self.context = context
+    def __init__(self) -> None:
+        """Initialize the artifacts handler."""
 
     def list_artifact_images(
         self,
@@ -84,6 +79,10 @@ class ArtifactsToolHandler:
                 }
 
             # Get sessionmaker from session manager
+            # Note: Using _sessionmaker (private API) to access SQLAlchemy sessionmaker.
+            # This is necessary because SessionManager doesn't expose this functionality
+            # publicly. A public method should be added to SessionManager if this becomes
+            # a common pattern.
             sessionmaker = session_manager._sessionmaker
 
             # Create artifact repo and fetch artifacts
@@ -197,6 +196,10 @@ class ArtifactsToolHandler:
                 working_dir = Path.cwd()
 
             # Get sessionmaker from session manager
+            # Note: Using _sessionmaker (private API) to access SQLAlchemy sessionmaker.
+            # This is necessary because SessionManager doesn't expose this functionality
+            # publicly. A public method should be added to SessionManager if this becomes
+            # a common pattern.
             sessionmaker = session_manager._sessionmaker
 
             # Create artifact repo and get artifact
@@ -232,6 +235,25 @@ class ArtifactsToolHandler:
 
             # Construct full path
             full_path = working_dir / local_path
+
+            # Validate path traversal: ensure resolved path stays within working_dir
+            try:
+                resolved_path = full_path.resolve()
+                resolved_working_dir = working_dir.resolve()
+                if not str(resolved_path).startswith(str(resolved_working_dir)):
+                    return {
+                        "success": False,
+                        "error": "Access denied: path outside project directory",
+                        "content": None,
+                        "mime_type": None,
+                    }
+            except Exception as exc:
+                return {
+                    "success": False,
+                    "error": f"Invalid path: {str(exc)}",
+                    "content": None,
+                    "mime_type": None,
+                }
 
             # Check if file exists
             if not full_path.exists():
