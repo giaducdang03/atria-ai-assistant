@@ -10,6 +10,7 @@ from atria.web.routes.projects import router as projects_router
 from atria.web.routes.projects import personal_router
 from atria.web.routes.artifacts import router as artifacts_router
 from atria.web.routes.fs import router as fs_router
+from atria.web.routes.personas import router as personas_router
 
 __all__ = [
     "chat_router",
@@ -22,4 +23,5 @@ __all__ = [
     "personal_router",
     "artifacts_router",
     "fs_router",
+    "personas_router",
 ]

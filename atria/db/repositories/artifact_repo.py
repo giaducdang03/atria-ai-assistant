@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from atria.db.models import Artifact
@@ -152,11 +152,7 @@ class ArtifactRepository(BaseRepository):
             True if artifact was deleted, False if not found or already deleted.
         """
         async with self._sessionmaker() as session:
-            stmt = (
-                update(Artifact)
-                .where(Artifact.id == artifact_id)
-                .values(is_deleted=True, updated_at=func.now())
-            )
+            stmt = delete(Artifact).where(Artifact.id == artifact_id)
             result = await session.execute(stmt)
             await session.commit()
             return result.rowcount > 0

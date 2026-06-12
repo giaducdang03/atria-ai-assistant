@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Any, Optional
@@ -16,6 +17,8 @@ from atria.db.repositories.conversation_repo import ConversationRepository
 from atria.db.repositories.project_repo import ProjectRepository
 from atria.web.dependencies.auth import require_authenticated_user
 from atria.web.utils.file_utils import generate_safe_filename, get_artifact_dir
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/artifacts",
@@ -213,8 +216,13 @@ async def upload_artifact(
         # Use project workspace_path or a default
         working_dir = proj.get("workspace_path", "/tmp")
 
-    # Check file size (max 50MB)
+    # Check file size (max 50MB) - check header before reading
     max_size = 50 * 1024 * 1024  # 50MB
+    content_length = file.size if hasattr(file, "size") else None
+    if content_length and content_length > max_size:
+        raise HTTPException(status_code=413, detail="File too large (max 50MB)")
+
+    # Read file content
     file_content = await file.read()
     if len(file_content) > max_size:
         raise HTTPException(status_code=413, detail="File too large (max 50MB)")
@@ -235,6 +243,7 @@ async def upload_artifact(
     try:
         file_path.write_bytes(file_content)
     except Exception as e:
+        logger.error(f"Failed to save file {safe_filename}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}") from e
 
     # Create artifact DB record
@@ -316,9 +325,8 @@ async def delete_artifact(
                         try:
                             if full_path.exists():
                                 full_path.unlink()
-                        except Exception:
-                            # Log but don't fail on file deletion error
-                            pass
+                        except Exception as e:
+                            logger.error(f"Failed to delete file {full_path}: {str(e)}")
             elif project_id:
                 proj_repo = ProjectRepository(sm)
                 proj = await proj_repo.get_by_id(project_id)
@@ -328,9 +336,8 @@ async def delete_artifact(
                     try:
                         if full_path.exists():
                             full_path.unlink()
-                    except Exception:
-                        # Log but don't fail on file deletion error
-                        pass
+                    except Exception as e:
+                        logger.error(f"Failed to delete file {full_path}: {str(e)}")
 
         # Delete from database
         await repo.hard_delete(artifact_id)

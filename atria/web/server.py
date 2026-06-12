@@ -27,6 +27,7 @@ from atria.web.routes import (
     artifacts_router,
     personal_router,
     fs_router,
+    personas_router,
 )
 from atria.web.websocket import websocket_endpoint
 from atria.web.state import init_state, get_state
@@ -103,6 +104,7 @@ def create_app() -> FastAPI:
     app.include_router(personal_router)
     app.include_router(artifacts_router)
     app.include_router(fs_router)
+    app.include_router(personas_router)
 
     # WebSocket endpoint
     app.add_websocket_route("/ws", websocket_endpoint)
