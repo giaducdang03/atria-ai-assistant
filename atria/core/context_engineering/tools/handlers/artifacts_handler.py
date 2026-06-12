@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import Any, Optional, Union
 
+from atria.core.context_engineering.tools.context import ToolExecutionContext
 from atria.db.repositories.artifact_repo import ArtifactRepository
 from atria.db.sync import run_sync
 
@@ -29,16 +30,20 @@ class ArtifactsToolHandler:
     # Maximum file size: 10MB
     _MAX_FILE_SIZE = 10 * 1024 * 1024
 
-    def __init__(self) -> None:
-        """Initialize the artifacts handler."""
-        pass
+    def __init__(self, context: ToolExecutionContext) -> None:
+        """Initialize the artifacts handler.
+
+        Args:
+            context: Tool execution context with session manager and other services
+        """
+        self.context = context
 
     def list_artifact_images(
         self,
         args: dict[str, Any],
         context: Any = None,
     ) -> dict[str, Any]:
-        """List artifact images by scope (conversation or project).
+        """List artifact images by scope (conversation, project, or both).
 
         Args:
             args: Arguments dict containing 'scope' (optional)
@@ -83,6 +88,7 @@ class ArtifactsToolHandler:
 
             # Create artifact repo and fetch artifacts
             artifact_repo = ArtifactRepository(sessionmaker)
+            artifacts = []
 
             if scope == "conversation" and conversation_id:
                 artifacts = run_sync(
@@ -92,6 +98,20 @@ class ArtifactsToolHandler:
                 artifacts = run_sync(
                     artifact_repo.list_by_project_and_scope(project_id, scope)
                 )
+            elif scope == "both":
+                # Fetch from both scopes and combine results
+                if conversation_id:
+                    conv_artifacts = run_sync(
+                        artifact_repo.list_by_conversation_and_scope(
+                            conversation_id, "conversation"
+                        )
+                    )
+                    artifacts.extend(conv_artifacts)
+                if project_id:
+                    proj_artifacts = run_sync(
+                        artifact_repo.list_by_project_and_scope(project_id, "project")
+                    )
+                    artifacts.extend(proj_artifacts)
             else:
                 return {
                     "success": False,

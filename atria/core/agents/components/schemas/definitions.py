@@ -1590,8 +1590,8 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                 "properties": {
                     "scope": {
                         "type": "string",
-                        "enum": ["conversation", "project"],
-                        "description": "Scope to list artifacts from: 'conversation' for current conversation only, 'project' for entire project",
+                        "enum": ["conversation", "project", "both"],
+                        "description": "Scope to list artifacts from: 'conversation' for current conversation only, 'project' for entire project, 'both' for artifacts from both scopes",
                         "default": "conversation",
                     },
                 },

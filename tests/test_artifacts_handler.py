@@ -19,10 +19,10 @@ def create_mock_context(tmp_path):
     mock_session.working_directory = str(tmp_path)
 
     mock_session_manager = MagicMock()
-    mock_session_manager.get_current_session = MagicMock(return_value=mock_session)
+    mock_session_manager.get_current_session = AsyncMock(return_value=mock_session)
     mock_session_manager._sessionmaker = MagicMock()
 
-    mock_context = MagicMock()
+    mock_context = MagicMock(spec=ToolExecutionContext)
     mock_context.session_manager = mock_session_manager
     return mock_context
 
@@ -31,9 +31,10 @@ class TestArtifactsToolHandlerListImages:
     """Test suite for list_artifact_images functionality."""
 
     @pytest.fixture
-    def handler(self):
-        """Create an ArtifactsToolHandler."""
-        return ArtifactsToolHandler()
+    def handler(self, tmp_path):
+        """Create an ArtifactsToolHandler with mock context."""
+        mock_context = create_mock_context(tmp_path)
+        return ArtifactsToolHandler(mock_context)
 
     def test_list_artifact_images_conversation_scope(self, handler, tmp_path):
         """Test listing artifacts by conversation scope."""
@@ -60,7 +61,7 @@ class TestArtifactsToolHandlerListImages:
             },
         ]
 
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
             with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
@@ -96,7 +97,7 @@ class TestArtifactsToolHandlerListImages:
             },
         ]
 
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
             with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
@@ -118,7 +119,7 @@ class TestArtifactsToolHandlerListImages:
 
     def test_list_artifact_images_empty_result(self, handler, tmp_path):
         """Test listing artifacts when none exist."""
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
             with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
@@ -141,9 +142,10 @@ class TestArtifactsToolHandlerReadImage:
     """Test suite for read_artifact_image functionality."""
 
     @pytest.fixture
-    def handler(self):
-        """Create an ArtifactsToolHandler."""
-        return ArtifactsToolHandler()
+    def handler(self, tmp_path):
+        """Create an ArtifactsToolHandler with mock context."""
+        mock_context = create_mock_context(tmp_path)
+        return ArtifactsToolHandler(mock_context)
 
     def test_read_artifact_image_png_success(self, handler, tmp_path):
         """Test reading a PNG image artifact."""
@@ -159,7 +161,7 @@ class TestArtifactsToolHandlerReadImage:
             "is_deleted": False,
         }
 
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
             with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
@@ -195,7 +197,7 @@ class TestArtifactsToolHandlerReadImage:
             "is_deleted": False,
         }
 
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
             with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
@@ -228,7 +230,7 @@ class TestArtifactsToolHandlerReadImage:
             "is_deleted": False,
         }
 
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
             with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
@@ -260,7 +262,7 @@ class TestArtifactsToolHandlerReadImage:
             "is_deleted": False,
         }
 
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
             with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
@@ -292,7 +294,7 @@ class TestArtifactsToolHandlerReadImage:
             "is_deleted": False,
         }
 
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
             with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
@@ -320,28 +322,40 @@ class TestArtifactsToolHandlerReadImage:
             "is_deleted": True,
         }
 
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
-            mock_repo_instance = MagicMock()
-            mock_repo_class.return_value = mock_repo_instance
-            mock_repo_instance.get_by_id = MagicMock(return_value=artifact)
+            with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
+                mock_repo_instance = MagicMock()
+                mock_repo_class.return_value = mock_repo_instance
 
-            result = handler.read_artifact_image({"artifact_id": 1}, mock_context)
+                # Set up run_sync to return mocked session and artifact
+                mock_run_sync.side_effect = [
+                    mock_context.session_manager.get_current_session.return_value,  # session
+                    artifact  # artifact data
+                ]
+
+                result = handler.read_artifact_image({"artifact_id": 1}, mock_context)
 
         assert result["success"] is False
         assert "deleted" in result["error"].lower()
 
     def test_read_artifact_image_not_found(self, handler, tmp_path):
         """Test reading a non-existent artifact."""
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
-            mock_repo_instance = MagicMock()
-            mock_repo_class.return_value = mock_repo_instance
-            mock_repo_instance.get_by_id = AsyncMock(return_value=None)
+            with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
+                mock_repo_instance = MagicMock()
+                mock_repo_class.return_value = mock_repo_instance
 
-            result = handler.read_artifact_image({"artifact_id": 999}, mock_context)
+                # Set up run_sync to return mocked session and None artifact
+                mock_run_sync.side_effect = [
+                    mock_context.session_manager.get_current_session.return_value,  # session
+                    None  # artifact not found
+                ]
+
+                result = handler.read_artifact_image({"artifact_id": 999}, mock_context)
 
         assert result["success"] is False
         assert "not found" in result["error"].lower()
@@ -356,14 +370,20 @@ class TestArtifactsToolHandlerReadImage:
             "is_deleted": False,
         }
 
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
-            mock_repo_instance = MagicMock()
-            mock_repo_class.return_value = mock_repo_instance
-            mock_repo_instance.get_by_id = MagicMock(return_value=artifact)
+            with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
+                mock_repo_instance = MagicMock()
+                mock_repo_class.return_value = mock_repo_instance
 
-            result = handler.read_artifact_image({"artifact_id": 1}, mock_context)
+                # Set up run_sync to return mocked session and artifact
+                mock_run_sync.side_effect = [
+                    mock_context.session_manager.get_current_session.return_value,  # session
+                    artifact  # artifact data
+                ]
+
+                result = handler.read_artifact_image({"artifact_id": 1}, mock_context)
 
         assert result["success"] is False
         assert "not found" in result["error"].lower() or "cannot access" in result["error"].lower()
@@ -382,14 +402,20 @@ class TestArtifactsToolHandlerReadImage:
             "is_deleted": False,
         }
 
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
-            mock_repo_instance = MagicMock()
-            mock_repo_class.return_value = mock_repo_instance
-            mock_repo_instance.get_by_id = MagicMock(return_value=artifact)
+            with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
+                mock_repo_instance = MagicMock()
+                mock_repo_class.return_value = mock_repo_instance
 
-            result = handler.read_artifact_image({"artifact_id": 1}, mock_context)
+                # Set up run_sync to return mocked session and artifact
+                mock_run_sync.side_effect = [
+                    mock_context.session_manager.get_current_session.return_value,  # session
+                    artifact  # artifact data
+                ]
+
+                result = handler.read_artifact_image({"artifact_id": 1}, mock_context)
 
         assert result["success"] is False
         assert "unsupported" in result["error"].lower() or "not an image" in result["error"].lower()
@@ -408,14 +434,20 @@ class TestArtifactsToolHandlerReadImage:
             "is_deleted": False,
         }
 
-        mock_context = create_mock_context(tmp_path)
+        mock_context = handler.context
 
         with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
-            mock_repo_instance = MagicMock()
-            mock_repo_class.return_value = mock_repo_instance
-            mock_repo_instance.get_by_id = MagicMock(return_value=artifact)
+            with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
+                mock_repo_instance = MagicMock()
+                mock_repo_class.return_value = mock_repo_instance
 
-            result = handler.read_artifact_image({"artifact_id": 1}, mock_context)
+                # Set up run_sync to return mocked session and artifact
+                mock_run_sync.side_effect = [
+                    mock_context.session_manager.get_current_session.return_value,  # session
+                    artifact  # artifact data
+                ]
+
+                result = handler.read_artifact_image({"artifact_id": 1}, mock_context)
 
         assert result["success"] is False
         assert "too large" in result["error"].lower() or "size" in result["error"].lower()
@@ -443,14 +475,20 @@ class TestArtifactsToolHandlerReadImage:
                 "is_deleted": False,
             }
 
-            mock_context = create_mock_context(tmp_path)
+            mock_context = handler.context
 
             with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.ArtifactRepository") as mock_repo_class:
-                mock_repo_instance = MagicMock()
-                mock_repo_class.return_value = mock_repo_instance
-                mock_repo_instance.get_by_id = MagicMock(return_value=artifact)
+                with patch("atria.core.context_engineering.tools.handlers.artifacts_handler.run_sync") as mock_run_sync:
+                    mock_repo_instance = MagicMock()
+                    mock_repo_class.return_value = mock_repo_instance
 
-                result = handler.read_artifact_image({"artifact_id": 1}, mock_context)
+                    # Set up run_sync to return mocked session and artifact
+                    mock_run_sync.side_effect = [
+                        mock_context.session_manager.get_current_session.return_value,  # session
+                        artifact  # artifact data
+                    ]
+
+                    result = handler.read_artifact_image({"artifact_id": 1}, mock_context)
 
             assert result["success"] is True, f"Failed for {filename}"
             assert result["mime_type"] == expected_mime, f"Wrong MIME type for {filename}"
