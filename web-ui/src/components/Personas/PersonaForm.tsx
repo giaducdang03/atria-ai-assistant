@@ -82,7 +82,7 @@ export function PersonaForm({ persona, onSave, onCancel }: PersonaFormProps) {
       </div>
 
       {/* Save/Cancel buttons - sticky at bottom */}
-      <div className="border-t border-hairline bg-surface-soft px-6 py-3 flex gap-3">
+      <div className="border-t border-hairline bg-surface-soft px-6 py-3 flex gap-3 rounded-b-lg">
         <button
           onClick={handleSave}
           className="flex-1 px-4 py-2 bg-ink text-inverse-ink rounded-full hover:bg-ink/90 font-medium text-sm transition-colors"

@@ -109,7 +109,7 @@ export function PersonasSettings() {
       <div className="grid grid-cols-3 gap-6">
         {/* Left: Personas List */}
         <div className="col-span-1 border border-hairline rounded-lg bg-canvas flex flex-col">
-          <div className="bg-surface-soft px-4 py-3 border-b border-hairline flex items-center justify-between">
+          <div className="bg-surface-soft px-4 py-3 border-b border-hairline flex items-center justify-between border-t-2 border-t-transparent">
             <h3 className="font-medium text-ink text-sm">All Personas</h3>
             <button
               onClick={() => {
@@ -153,7 +153,7 @@ export function PersonasSettings() {
         {/* Right: Editor or View */}
         {(selectedPersona || isEditing) && (
           <div className="col-span-2 border border-hairline rounded-lg bg-canvas flex flex-col">
-            <div className="bg-surface-soft px-4 py-3 border-b border-hairline flex items-center justify-between">
+            <div className="bg-surface-soft px-4 py-3 border-b border-hairline flex items-center justify-between border-t-2 border-t-transparent">
               <h3 className="font-medium text-ink text-sm">
                 {isEditing ? '✏️ Edit Persona' : '👁️ View Persona'}
               </h3>
