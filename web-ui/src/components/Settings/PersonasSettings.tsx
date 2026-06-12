@@ -1,17 +1,11 @@
 import { useState, useEffect } from 'react';
 import { PersonaForm } from '../Personas/PersonaForm';
-import { PersonaList } from '../Personas/PersonaList';
 
 interface Persona {
   name: string;
-  description: string;
+  system_prompt: string;
   is_built_in: boolean;
   created_at: string;
-  agent_tone?: string;
-  agent_style?: string;
-  agent_behavior?: string;
-  section_overrides: Record<string, string>;
-  subagent_overrides: Record<string, string>;
 }
 
 export function PersonasSettings() {
@@ -87,34 +81,19 @@ export function PersonasSettings() {
     }
   };
 
-  const handleDuplicatePersona = async (name: string) => {
-    const baseName = prompt('New persona name:', `${name} (copy)`);
-    if (!baseName) return;
-
-    try {
-      const response = await fetch(
-        `/api/personas/${name}/duplicate?new_name=${encodeURIComponent(baseName)}`,
-        { method: 'POST' }
-      );
-      if (!response.ok) throw new Error('Failed to duplicate');
-      const newPersona = await response.json();
-      setPersonas([...personas, newPersona]);
-      setSelectedPersona(newPersona);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to duplicate');
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
-        Loading personas...
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center gap-2 text-ink/50">
+          <div className="w-4 h-4 border-2 border-ink/20 border-t-ink rounded-full animate-spin" />
+          <span className="text-sm">Loading personas...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-4xl">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
           {error}
@@ -123,29 +102,47 @@ export function PersonasSettings() {
 
       <div className="flex gap-4">
         {/* Personas List */}
-        <div className="w-72">
-          <div className="border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-white">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 text-sm">Personas</h3>
+        <div className="w-56">
+          <div className="border border-hairline rounded-lg overflow-hidden flex flex-col bg-canvas">
+            <div className="bg-surface-soft px-4 py-3 border-b border-hairline flex items-center justify-between">
+              <h3 className="font-medium text-ink text-sm">Personas</h3>
               <button
                 onClick={() => {
                   setSelectedPersona(null);
                   setIsEditing(true);
                 }}
-                className="px-2.5 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 font-medium"
+                className="px-3 py-1.5 bg-ink text-inverse-ink text-xs rounded-full hover:bg-ink/90 font-medium transition-colors"
               >
                 New
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto max-h-96">
-              <PersonaList
-                personas={personas}
-                selectedPersona={selectedPersona}
-                onSelect={setSelectedPersona}
-                onDelete={handleDeletePersona}
-                onDuplicate={handleDuplicatePersona}
-              />
+              {personas.length === 0 ? (
+                <div className="p-4 text-center text-ink/50 text-xs">
+                  No personas yet
+                </div>
+              ) : (
+                <div className="divide-y divide-hairline">
+                  {personas.map(p => (
+                    <button
+                      key={p.name}
+                      onClick={() => {
+                        setSelectedPersona(p);
+                        setIsEditing(false);
+                      }}
+                      className={`w-full px-4 py-3 text-left text-sm transition-colors ${
+                        selectedPersona?.name === p.name
+                          ? 'bg-ink/5 text-ink font-medium'
+                          : 'text-ink hover:bg-surface-soft'
+                      }`}
+                    >
+                      <div className="truncate">{p.name}</div>
+                      <div className="text-xs text-ink/50 truncate">{p.system_prompt.substring(0, 40)}...</div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -153,17 +150,17 @@ export function PersonasSettings() {
         {/* Editor */}
         {(selectedPersona || isEditing) && (
           <div className="flex-1">
-            <div className="border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-white">
-              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900 text-sm">
+            <div className="border border-hairline rounded-lg overflow-hidden flex flex-col bg-canvas">
+              <div className="bg-surface-soft px-4 py-3 border-b border-hairline flex items-center justify-between">
+                <h3 className="font-medium text-ink text-sm">
                   {isEditing ? 'Edit' : 'View'} Persona
                 </h3>
                 {!isEditing && selectedPersona && (
                   <button
-                    onClick={() => setIsEditing(true)}
-                    className="px-2.5 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 font-medium"
+                    onClick={() => handleDeletePersona(selectedPersona.name)}
+                    className="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-full hover:bg-red-100 font-medium transition-colors"
                   >
-                    Edit
+                    Delete
                   </button>
                 )}
               </div>
@@ -176,78 +173,30 @@ export function PersonasSettings() {
                     onCancel={() => setIsEditing(false)}
                   />
                 ) : selectedPersona ? (
-                  <PersonaPreview persona={selectedPersona} />
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <h4 className="text-xs font-medium text-ink/50 uppercase mb-1">Name</h4>
+                      <p className="text-sm text-ink">{selectedPersona.name}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-medium text-ink/50 uppercase mb-2">System Prompt</h4>
+                      <pre className="text-xs bg-surface-soft p-3 rounded-lg overflow-auto max-h-64 text-ink whitespace-pre-wrap">
+                        {selectedPersona.system_prompt}
+                      </pre>
+                    </div>
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="w-full px-4 py-2 bg-ink text-inverse-ink rounded-full hover:bg-ink/90 font-medium text-sm transition-colors"
+                    >
+                      Edit
+                    </button>
+                  </div>
                 ) : null}
               </div>
             </div>
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-interface PersonaPreviewProps {
-  persona: Persona;
-}
-
-function PersonaPreview({ persona }: PersonaPreviewProps) {
-  return (
-    <div className="p-4 space-y-3 text-sm">
-      <div>
-        <h4 className="font-medium text-gray-900">Name</h4>
-        <p className="text-gray-600 mt-0.5">{persona.name}</p>
-      </div>
-
-      <div>
-        <h4 className="font-medium text-gray-900">Description</h4>
-        <p className="text-gray-600 mt-0.5 text-xs whitespace-pre-wrap">
-          {persona.description}
-        </p>
-      </div>
-
-      {persona.agent_tone && (
-        <div>
-          <h4 className="font-medium text-gray-900">Tone</h4>
-          <p className="text-gray-600 mt-0.5 text-xs">{persona.agent_tone}</p>
-        </div>
-      )}
-
-      {persona.agent_style && (
-        <div>
-          <h4 className="font-medium text-gray-900">Style</h4>
-          <p className="text-gray-600 mt-0.5 text-xs">{persona.agent_style}</p>
-        </div>
-      )}
-
-      {persona.agent_behavior && (
-        <div>
-          <h4 className="font-medium text-gray-900">Behavior</h4>
-          <p className="text-gray-600 mt-0.5 text-xs">{persona.agent_behavior}</p>
-        </div>
-      )}
-
-      {Object.keys(persona.section_overrides).length > 0 && (
-        <div>
-          <h4 className="font-medium text-gray-900">
-            Section Overrides ({Object.keys(persona.section_overrides).length})
-          </h4>
-          <p className="text-gray-500 text-xs mt-0.5">
-            {Object.keys(persona.section_overrides).join(', ')}
-          </p>
-        </div>
-      )}
-
-      {Object.keys(persona.subagent_overrides).length > 0 && (
-        <div>
-          <h4 className="font-medium text-gray-900">
-            Subagent Overrides ({Object.keys(persona.subagent_overrides).length})
-          </h4>
-          <p className="text-gray-500 text-xs mt-0.5">
-            {Object.keys(persona.subagent_overrides).join(', ')}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
