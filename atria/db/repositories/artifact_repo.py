@@ -27,6 +27,8 @@ class ArtifactRepository(BaseRepository):
         preview: Optional[Any] = None,
         source_mode: Optional[str] = None,
         pinned: bool = False,
+        scope: Optional[str] = None,
+        local_path: Optional[str] = None,
     ) -> int:
         async with self._sessionmaker() as session:
             stmt = (
@@ -41,6 +43,8 @@ class ArtifactRepository(BaseRepository):
                     pinned=pinned,
                     payload_ref=payload_ref,
                     preview=preview,
+                    scope=scope[:20] if scope else None,
+                    local_path=local_path[:512] if local_path else None,
                 )
                 .returning(Artifact.id)
             )
@@ -75,6 +79,32 @@ class ArtifactRepository(BaseRepository):
                 select(Artifact)
                 .where(
                     Artifact.project_id == project_id,
+                    Artifact.is_deleted.is_(False),
+                )
+                .order_by(Artifact.pinned.desc(), Artifact.created_at.desc())
+            )
+            return [_flatten(obj) for obj in result.scalars().all()]
+
+    async def list_by_conversation_and_scope(self, conversation_id: int, scope: str) -> list[dict]:
+        async with self._sessionmaker() as session:
+            result = await session.execute(
+                select(Artifact)
+                .where(
+                    Artifact.conversation_id == conversation_id,
+                    Artifact.scope == scope,
+                    Artifact.is_deleted.is_(False),
+                )
+                .order_by(Artifact.pinned.desc(), Artifact.created_at.desc())
+            )
+            return [_flatten(obj) for obj in result.scalars().all()]
+
+    async def list_by_project_and_scope(self, project_id: int, scope: str) -> list[dict]:
+        async with self._sessionmaker() as session:
+            result = await session.execute(
+                select(Artifact)
+                .where(
+                    Artifact.project_id == project_id,
+                    Artifact.scope == scope,
                     Artifact.is_deleted.is_(False),
                 )
                 .order_by(Artifact.pinned.desc(), Artifact.created_at.desc())
@@ -120,6 +150,8 @@ class ArtifactRepository(BaseRepository):
         type: str,
         title: Optional[str] = None,
         source_mode: str = "auto",
+        scope: Optional[str] = None,
+        local_path: Optional[str] = None,
     ) -> int:
         async with self._sessionmaker() as session:
             existing = await session.execute(
@@ -143,6 +175,8 @@ class ArtifactRepository(BaseRepository):
                     title=title or payload_ref.split("/")[-1],
                     pinned=False,
                     payload_ref=payload_ref,
+                    scope=scope[:20] if scope else None,
+                    local_path=local_path[:512] if local_path else None,
                 )
                 .returning(Artifact.id)
             )
