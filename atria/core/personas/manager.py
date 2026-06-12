@@ -76,7 +76,7 @@ class PersonaManager:
         try:
             data = json.loads(persona_file.read_text())
             return Persona.from_dict(data)
-        except (json.JSONDecodeError, ValueError):
+        except (FileNotFoundError, json.JSONDecodeError, ValueError):
             return None
 
     def save_persona(self, persona: Persona) -> Path:

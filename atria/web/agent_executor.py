@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import atexit
 import asyncio
+import functools
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -98,8 +99,6 @@ class AgentExecutor:
 
             # Run agent in thread pool to avoid blocking event loop
             loop = asyncio.get_event_loop()
-            import functools
-
             response = await loop.run_in_executor(
                 self.executor,
                 functools.partial(
