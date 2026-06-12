@@ -4,23 +4,6 @@ import { motion, useReducedMotion } from 'motion/react';
 import { useChatStore } from '../../stores/chat';
 import { apiClient } from '../../api/client';
 
-const MODE_STYLES = {
-  normal: 'bg-bg-400/40 text-text-200 border-gray-300 hover:bg-bg-400/60',
-  plan: 'bg-accent-secondary-900 text-accent-secondary-100 border-accent-secondary-900/50 hover:bg-accent-secondary-900/80',
-} as const;
-
-const AUTONOMY_STYLES = {
-  'Manual': 'bg-bg-400/40 text-text-200 border-gray-300 hover:bg-bg-400/60',
-  'Semi-Auto': 'bg-accent-secondary-900 text-accent-secondary-100 border-accent-secondary-900/50 hover:bg-accent-secondary-900/80',
-  'Auto': 'bg-success-100/10 text-success-100 border-success-100/20 hover:bg-success-100/15',
-} as const;
-
-const THINKING_STYLES: Record<string, string> = {
-  'Off':           'bg-bg-200 text-text-500 border-gray-300 hover:bg-bg-300',
-  'Low':           'bg-cyan-500/10 text-cyan-600 border-cyan-500/20 hover:bg-cyan-500/15',
-  'Medium':        'bg-success-100/10 text-success-100 border-success-100/20 hover:bg-success-100/15',
-  'High':          'bg-yellow-500/10 text-yellow-600 border-yellow-500/20 hover:bg-yellow-500/15',
-} as const;
 
 function formatCost(cost: number): string {
   return cost < 0.01 ? `$${cost.toFixed(4)}` : `$${cost.toFixed(2)}`;
@@ -41,11 +24,7 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
   const reduce = useReducedMotion();
   const status = useChatStore(state => state.status);
   const isConnected = useChatStore(state => state.isConnected);
-  const thinkingLevel = useChatStore(state => state.thinkingLevel);
   const sidebarCollapsed = useChatStore(state => state.sidebarCollapsed);
-  const toggleMode = useChatStore(state => state.toggleMode);
-  const cycleAutonomy = useChatStore(state => state.cycleAutonomy);
-  const cycleThinkingLevel = useChatStore(state => state.cycleThinkingLevel);
   const toggleSidebar = useChatStore(state => state.toggleSidebar);
 
   // Load initial config on mount
@@ -72,14 +51,6 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'T') {
-        e.preventDefault();
-        cycleThinkingLevel();
-      }
-      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
-        e.preventDefault();
-        cycleAutonomy();
-      }
       if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
         toggleSidebar();
@@ -92,7 +63,7 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cycleThinkingLevel, cycleAutonomy, toggleSidebar, onOpenCommandPalette]);
+  }, [toggleSidebar, onOpenCommandPalette]);
 
   const getProjectName = (path: string) => {
     if (!path) return '';
@@ -129,7 +100,7 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
       {/* ── Spacer ── */}
       <div className="flex-1" />
 
-      {/* ── Center-Right: Status Pills ── */}
+      {/* ── Center-Right: Status Pills (minimal) ── */}
       {status && (
         <div className="flex items-center gap-2 flex-shrink-0">
           {/* Cost pill — only shown when agent has run */}
@@ -151,38 +122,6 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
               Ctx: {Math.round(status.context_usage_pct)}%
             </span>
           )}
-
-          {/* Mode pill */}
-          <button
-            onClick={toggleMode}
-            className={`${pillBase} ${MODE_STYLES[status.mode]}`}
-            title="Normal: full tool access · Plan: read-only exploration. Click to toggle"
-          >
-            {status.mode === 'plan' && (
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            )}
-            Mode: {status.mode === 'normal' ? 'Normal' : 'Plan'}
-          </button>
-
-          {/* Autonomy pill */}
-          <button
-            onClick={cycleAutonomy}
-            className={`${pillBase} ${AUTONOMY_STYLES[status.autonomy_level]}`}
-            title="Manual: approve each tool · Semi-Auto: auto-approve safe tools · Auto: approve all. Click to cycle (Ctrl+Shift+A)"
-          >
-            Approval: {status.autonomy_level}
-          </button>
-
-          {/* Thinking pill */}
-          <button
-            onClick={cycleThinkingLevel}
-            className={`${pillBase} ${THINKING_STYLES[thinkingLevel] || THINKING_STYLES['Medium']}`}
-            title="Controls how much the AI reasons before responding. Click to cycle (Ctrl+Shift+T)"
-          >
-            Think: {thinkingLevel}
-          </button>
 
           {/* Command palette button */}
           <button
