@@ -44,6 +44,7 @@ from atria.core.context_engineering.tools.handlers.chart_handler import ChartHan
 from atria.core.context_engineering.tools.handlers.md_to_pdf_handler import MdToPdfHandler
 from atria.core.context_engineering.tools.implementations.chart_tool import ChartTool
 from atria.core.context_engineering.tools.implementations.md_to_pdf_tool import MdToPdfTool
+from atria.core.context_engineering.tools.handlers.artifacts_handler import ArtifactsToolHandler
 
 if TYPE_CHECKING:
     from atria.core.skills import SkillLoader
@@ -232,6 +233,7 @@ class ToolRegistry:
         self._markdown_to_pdf_handler = MarkdownToPdfHandler()
         self._memory_handler = MemoryToolHandler()
         self._session_handler = SessionToolHandler()
+        self._artifacts_handler = ArtifactsToolHandler()
         self._batch_handler: Union[BatchToolHandler, None] = None  # Lazy init after registry ready
 
         self.set_mcp_manager(mcp_manager)
@@ -309,6 +311,9 @@ class ToolRegistry:
             "list_agents": self._handle_list_agents,
             # Apply patch
             "apply_patch": self._handle_apply_patch,
+            # Artifact tools
+            "list_artifact_images": self._artifacts_handler.list_artifact_images,
+            "read_artifact_image": self._artifacts_handler.read_artifact_image,
         }
 
         # Merge skill-owned tool handlers (deep_research, deep_analyze, etc.).

@@ -1579,4 +1579,41 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
             },
         },
     },
+    # ===== Artifact Tools =====
+    {
+        "type": "function",
+        "function": {
+            "name": "list_artifact_images",
+            "description": load_tool_description("list-artifact-images"),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "scope": {
+                        "type": "string",
+                        "enum": ["conversation", "project"],
+                        "description": "Scope to list artifacts from: 'conversation' for current conversation only, 'project' for entire project",
+                        "default": "conversation",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_artifact_image",
+            "description": load_tool_description("read-artifact-image"),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "artifact_id": {
+                        "type": "integer",
+                        "description": "The ID of the artifact image to read",
+                    },
+                },
+                "required": ["artifact_id"],
+            },
+        },
+    },
 ]
