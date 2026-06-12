@@ -3,6 +3,7 @@ import { useChatStore } from '../../stores/chat';
 import { apiClient } from '../../api/client';
 import { FileMentionDropdown } from './FileMentionDropdown';
 import { FileChangesButton } from './FileChangesButton';
+import { PersonaSelector } from './PersonaSelector';
 
 interface FileItem {
   path: string;
@@ -220,9 +221,14 @@ export function InputBox() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-2">
-          <div className="text-xs text-text-500 px-1">
-            Press <kbd className="px-1.5 py-0.5 bg-bg-200 border border-border-300/20 rounded text-xs">@</kbd> to mention files · <kbd className="px-1.5 py-0.5 bg-bg-200 border border-border-300/20 rounded text-xs">Enter</kbd> to send · <kbd className="px-1.5 py-0.5 bg-bg-200 border border-border-300/20 rounded text-xs">Shift + Enter</kbd> for new line · <kbd className="px-1.5 py-0.5 bg-bg-200 border border-border-300/20 rounded text-xs">Esc</kbd> to stop
+        <div className="flex items-center justify-between mt-2 gap-4">
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="text-xs text-text-500 px-1">
+              Press <kbd className="px-1.5 py-0.5 bg-bg-200 border border-border-300/20 rounded text-xs">@</kbd> to mention files · <kbd className="px-1.5 py-0.5 bg-bg-200 border border-border-300/20 rounded text-xs">Enter</kbd> to send · <kbd className="px-1.5 py-0.5 bg-bg-200 border border-border-300/20 rounded text-xs">Shift + Enter</kbd> for new line · <kbd className="px-1.5 py-0.5 bg-bg-200 border border-border-300/20 rounded text-xs">Esc</kbd> to stop
+            </div>
+            {hasActiveSession && (
+              <PersonaSelector />
+            )}
           </div>
 
           {hasActiveSession && (

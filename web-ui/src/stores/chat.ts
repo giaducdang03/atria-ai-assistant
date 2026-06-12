@@ -188,6 +188,7 @@ interface ChatState {
   bumpSessionList: () => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  setSelectedPersona: (personaName: string | null) => void;
 }
 
 const AUTONOMY_CYCLE: Array<'Manual' | 'Semi-Auto' | 'Auto'> = ['Manual', 'Semi-Auto', 'Auto'];
@@ -207,6 +208,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
   bumpSessionList: () => set(state => ({ sessionListVersion: state.sessionListVersion + 1 })),
   toggleSidebar: () => set(state => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+  setSelectedPersona: (personaName: string | null) => {
+    const sessionId = get().currentSessionId;
+    if (sessionId) {
+      set(state => ({
+        ...patchSession(state, sessionId, { selectedPersona: personaName }),
+      }));
+    }
+  },
 
   loadSession: async (sessionId: string) => {
     console.log(`[Frontend] Loading session ${sessionId}`);

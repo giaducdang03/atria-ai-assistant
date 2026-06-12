@@ -274,6 +274,7 @@ export interface PerSessionState {
   pendingPlanApproval: PlanApprovalRequest | null;
   progressMessage: string | null;
   queuedMessages: string[];
+  selectedPersona?: string | null;
 }
 
 // ── Artifact Viewer ──────────────────────────────────────────────────────────
