@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -58,13 +58,11 @@ def synthesize_section(
 
 
 def synthesize_key_findings(
-    section_contents: List[Dict[str, str]],
+    section_contents: List[Dict[str, Any]],
     chat_fn: ChatFn,
 ) -> str:
     sections_block = "\n\n".join(
-        f"### {s['name']}\n{s['content']}"
-        for s in section_contents
-        if s.get("content")
+        f"### {s['name']}\n{s['content']}" for s in section_contents if s.get("content")
     )
     if not sections_block:
         return "- *No analysis sections available.*"
@@ -78,14 +76,12 @@ def synthesize_key_findings(
 
 def synthesize_executive_summary(
     dataset_name: str,
-    section_contents: List[Dict[str, str]],
+    section_contents: List[Dict[str, Any]],
     key_findings: str,
     chat_fn: ChatFn,
 ) -> str:
     sections_block = "\n\n".join(
-        f"### {s['name']}\n{s['content']}"
-        for s in section_contents
-        if s.get("content")
+        f"### {s['name']}\n{s['content']}" for s in section_contents if s.get("content")
     )
     user = (
         f"Dataset: {dataset_name}\n\n"
