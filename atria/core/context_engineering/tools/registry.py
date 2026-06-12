@@ -752,6 +752,8 @@ class ToolRegistry:
                 "get_session_history",
                 "send_image",
                 "send_data",
+                "list_artifact_images",
+                "read_artifact_image",
             }:
                 # Handlers requiring context
                 result = handler(arguments, context)
