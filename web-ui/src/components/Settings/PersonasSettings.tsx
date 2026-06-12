@@ -151,14 +151,14 @@ export function PersonasSettings() {
         </div>
 
         {/* Editor */}
-        {selectedPersona && (
+        {(selectedPersona || isEditing) && (
           <div className="flex-1">
             <div className="border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-white">
               <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900 text-sm">
                   {isEditing ? 'Edit' : 'View'} Persona
                 </h3>
-                {!isEditing && (
+                {!isEditing && selectedPersona && (
                   <button
                     onClick={() => setIsEditing(true)}
                     className="px-2.5 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 font-medium"
@@ -175,9 +175,9 @@ export function PersonasSettings() {
                     onSave={handleSavePersona}
                     onCancel={() => setIsEditing(false)}
                   />
-                ) : (
+                ) : selectedPersona ? (
                   <PersonaPreview persona={selectedPersona} />
-                )}
+                ) : null}
               </div>
             </div>
           </div>
