@@ -259,6 +259,7 @@ export interface Artifact {
   pinned: boolean;
   payload_ref: string | null;
   preview: any | null;
+  size?: number; // Actual file size in bytes
   created_at: string;
   updated_at: string | null;
 }

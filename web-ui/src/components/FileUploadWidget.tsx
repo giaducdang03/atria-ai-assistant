@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { useArtifactUpload, type UploadScope } from '../hooks/useArtifactUpload';
 import { formatFileSize } from '../utils/fileUtils';
 
@@ -20,6 +20,7 @@ export function FileUploadWidget({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [scope, setScope] = useState<UploadScope>('conversation');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const { upload, uploading, progress, error, clearError } = useArtifactUpload({
     maxFileSizeMB,
     onError: (err) => {
@@ -27,18 +28,59 @@ export function FileUploadWidget({
     },
   });
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.currentTarget.files;
+  const handleFileInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.currentTarget.files;
+      if (files) {
+        const newFiles = Array.from(files);
+        setSelectedFiles((prev) => [...prev, ...newFiles]);
+        e.currentTarget.value = ''; // Reset input
+      }
+    },
+    [],
+  );
+
+  const handleRemoveFile = useCallback((index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleScopeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setScope(e.target.value as UploadScope);
+  }, []);
+
+  const handleClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
     if (files) {
       const newFiles = Array.from(files);
       setSelectedFiles((prev) => [...prev, ...newFiles]);
-      e.currentTarget.value = ''; // Reset input
     }
-  };
-
-  const handleRemoveFile = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
@@ -72,7 +114,7 @@ export function FileUploadWidget({
               name="scope"
               value="conversation"
               checked={scope === 'conversation'}
-              onChange={(e) => setScope(e.target.value as UploadScope)}
+              onChange={handleScopeChange}
               disabled={uploading}
               className="w-4 h-4"
             />
@@ -84,7 +126,7 @@ export function FileUploadWidget({
               name="scope"
               value="project"
               checked={scope === 'project'}
-              onChange={(e) => setScope(e.target.value as UploadScope)}
+              onChange={handleScopeChange}
               disabled={uploading}
               className="w-4 h-4"
             />
@@ -92,9 +134,18 @@ export function FileUploadWidget({
           </label>
         </div>
 
-        {/* File Input */}
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
-          onClick={() => fileInputRef.current?.click()}
+        {/* File Input with Drag and Drop */}
+        <div
+          className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${
+            isDragging
+              ? 'border-blue-400 bg-blue-50 shadow-md'
+              : 'border-gray-300 hover:border-gray-400'
+          }`}
+          onClick={handleClick}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
         >
           <input
             ref={fileInputRef}

@@ -1,8 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { Artifact } from '../types';
 import { validateFileSize } from '../utils/fileUtils';
 
 export type UploadScope = 'conversation' | 'project';
+
+const UPLOAD_TIMEOUT_MS = 60000; // 60 seconds
 
 interface UseArtifactUploadOptions {
   maxFileSizeMB?: number;
@@ -15,6 +17,7 @@ export function useArtifactUpload(options: UseArtifactUploadOptions = {}) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
+  const xhrRef = useRef<XMLHttpRequest | null>(null);
 
   const upload = useCallback(
     async (
@@ -50,6 +53,10 @@ export function useArtifactUpload(options: UseArtifactUploadOptions = {}) {
 
         // Upload with progress tracking
         const xhr = new XMLHttpRequest();
+        xhrRef.current = xhr;
+
+        // Set timeout
+        xhr.timeout = UPLOAD_TIMEOUT_MS;
 
         // Track progress
         xhr.upload.addEventListener('progress', (e) => {
@@ -68,12 +75,29 @@ export function useArtifactUpload(options: UseArtifactUploadOptions = {}) {
             if (xhr.status >= 200 && xhr.status < 300) {
               resolve(JSON.parse(xhr.responseText));
             } else {
-              reject(new Error(`Upload failed: ${xhr.statusText}`));
+              // Better error messages based on status
+              if (xhr.status === 413) {
+                reject(new Error(`File too large (max ${maxFileSizeMB}MB)`));
+              } else if (xhr.status === 400) {
+                reject(new Error('Invalid file or scope'));
+              } else if (xhr.status >= 500) {
+                reject(new Error('Server error, please try again'));
+              } else {
+                reject(new Error(`Upload failed: ${xhr.statusText || 'Unknown error'}`));
+              }
             }
           });
 
           xhr.addEventListener('error', () => {
             reject(new Error('Upload failed: Network error'));
+          });
+
+          xhr.addEventListener('abort', () => {
+            reject(new Error('Upload cancelled'));
+          });
+
+          xhr.addEventListener('timeout', () => {
+            reject(new Error('Upload took too long, please try again'));
           });
 
           xhr.open('POST', '/api/artifacts/upload');
@@ -111,11 +135,21 @@ export function useArtifactUpload(options: UseArtifactUploadOptions = {}) {
     setError(null);
   }, []);
 
+  const abort = useCallback(() => {
+    if (xhrRef.current) {
+      xhrRef.current.abort();
+      setError('Upload cancelled');
+      setUploading(false);
+      setProgress({});
+    }
+  }, []);
+
   return {
     upload,
     uploading,
     progress,
     error,
     clearError,
+    abort,
   };
 }

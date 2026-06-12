@@ -61,7 +61,7 @@ export function ArtifactThumbnail({
               {artifact.title || 'Untitled'}
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              {formatFileSize(artifact.preview ? artifact.preview.length : 0)}
+              {artifact.size ? formatFileSize(artifact.size) : 'Unknown size'}
             </p>
           </div>
         </div>
