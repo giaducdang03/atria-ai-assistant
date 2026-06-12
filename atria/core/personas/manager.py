@@ -70,6 +70,9 @@ class PersonaManager:
             Persona object or None if not found
         """
         persona_file = self.personas_dir / f"{name}.json"
+        # Guard against path traversal
+        if not str(persona_file.resolve()).startswith(str(self.personas_dir.resolve())):
+            return None
         if not persona_file.exists():
             return None
 

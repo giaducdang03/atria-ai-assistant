@@ -16,6 +16,7 @@ const DEFAULT_SESSION: PerSessionState = {
   pendingPlanApproval: null,
   progressMessage: null,
   queuedMessages: [],
+  selectedPersona: null,
 };
 
 function getSessionState(states: Record<string, PerSessionState>, id: string): PerSessionState {

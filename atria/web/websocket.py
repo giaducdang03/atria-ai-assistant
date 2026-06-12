@@ -113,6 +113,9 @@ class WebSocketManager:
         message = data.get("data", {}).get("message")
         session_id = data.get("data", {}).get("session_id")
         persona_name = data.get("data", {}).get("persona_name")
+        # Reject persona_name with path traversal sequences
+        if persona_name and (not isinstance(persona_name, str) or "/" in persona_name or ".." in persona_name):
+            persona_name = None
 
         if not message:
             await self.send_message(

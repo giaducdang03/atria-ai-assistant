@@ -363,6 +363,8 @@ class AgentExecutor:
             persona = PersonaManager().get_persona(persona_name)
             if persona:
                 system_content = persona.system_prompt + "\n\n" + system_content
+            else:
+                logger.warning(f"Persona '{persona_name}' not found, using base system prompt")
         wd_str = str(working_dir)
         if wd_str and wd_str not in system_content:
             system_content += (
