@@ -1011,7 +1011,6 @@ class AtriaChatApp(App):
             self.conversation.add_system_message("No subagent sessions found.")
             return
 
-
         if len(entries) == 1:
             # Single subagent — open directly
             self._open_subagent_detail(session_manager, entries[0])

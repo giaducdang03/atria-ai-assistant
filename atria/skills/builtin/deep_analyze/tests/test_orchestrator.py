@@ -24,13 +24,22 @@ def _plan() -> dict:
     return {
         "summary": "s",
         "sub_tables": [
-            {"name": "by_region",
-             "sql": "CREATE TABLE t_by_region AS SELECT region, SUM(r) r FROM raw GROUP BY region",
-             "why": ""},
+            {
+                "name": "by_region",
+                "sql": "CREATE TABLE t_by_region AS SELECT region, SUM(r) r FROM raw GROUP BY region",
+                "why": "",
+            },
         ],
         "charts": [
-            {"name": "regional", "source_table": "t_by_region", "type": "bar",
-             "x": "region", "y": ["r"], "title": "Regional", "why": ""},
+            {
+                "name": "regional",
+                "source_table": "t_by_region",
+                "type": "bar",
+                "x": "region",
+                "y": ["r"],
+                "title": "Regional",
+                "why": "",
+            },
         ],
     }
 
@@ -62,9 +71,13 @@ def _run_blocking(
     registry.submit(
         job,
         lambda j: run_job(
-            ctx, registry, j,
-            planner=planner, extractor=extractor,
-            visualizer=visualizer, insighter=insighter,
+            ctx,
+            registry,
+            j,
+            planner=planner,
+            extractor=extractor,
+            visualizer=visualizer,
+            insighter=insighter,
             reporter=reporter,
         ),
     )
@@ -78,14 +91,17 @@ def test_happy_path(csv_file: Path, tmp_path: Path) -> None:
     job = _make_job(tmp_path, "s1", csv_file)
 
     _run_blocking(
-        job, registry, ctx,
+        job,
+        registry,
+        ctx,
         planner=lambda profile: _plan(),
         reporter=lambda job: str(job.dir / "report.pdf"),
     )
 
     assert job.status == "done"
-    phases = [e["phase"] for e in events
-              if e.get("type") == "analyze.phase" and e.get("status") == "done"]
+    phases = [
+        e["phase"] for e in events if e.get("type") == "analyze.phase" and e.get("status") == "done"
+    ]
     assert phases == ["load", "plan", "extract", "render", "insight", "report"]
     with sqlite3.connect(job.dir / "data.db") as cx:
         assert cx.execute("SELECT COUNT(*) FROM t_by_region").fetchone()[0] == 3
@@ -97,15 +113,24 @@ def test_subtable_failure_does_not_abort_job(csv_file: Path, tmp_path: Path) -> 
         {"name": "broken", "sql": "CREATE TABLE t_broken AS SELECT nonsense FROM raw", "why": ""}
     )
     bad_plan["charts"].append(
-        {"name": "broken_chart", "source_table": "t_broken", "type": "bar",
-         "x": "region", "y": ["r"], "title": "x", "why": ""}
+        {
+            "name": "broken_chart",
+            "source_table": "t_broken",
+            "type": "bar",
+            "x": "region",
+            "y": ["r"],
+            "title": "x",
+            "why": "",
+        }
     )
     ctx = SkillToolContext()
     registry = AnalyzeJobRegistry()
     job = _make_job(tmp_path, "s2", csv_file)
 
     _run_blocking(
-        job, registry, ctx,
+        job,
+        registry,
+        ctx,
         planner=lambda profile: bad_plan,
         reporter=lambda job: str(job.dir / "report.pdf"),
     )
@@ -127,7 +152,9 @@ def test_cancel_before_render(csv_file: Path, tmp_path: Path) -> None:
     registry.submit(
         job,
         lambda j: run_job(
-            ctx, registry, j,
+            ctx,
+            registry,
+            j,
             planner=lambda profile: _plan(),
             extractor=slow_extractor,
             visualizer=lambda job, spec: None,
@@ -150,7 +177,9 @@ def test_empty_plan_marks_failed(csv_file: Path, tmp_path: Path) -> None:
     job = _make_job(tmp_path, "s4", csv_file)
 
     _run_blocking(
-        job, registry, ctx,
+        job,
+        registry,
+        ctx,
         planner=empty_planner,
         reporter=lambda job: "x",
         timeout=10,
@@ -169,7 +198,9 @@ def test_default_reporter_produces_pdf(csv_file: Path, tmp_path: Path) -> None:
     registry = AnalyzeJobRegistry()
     job = _make_job(tmp_path, "s5", csv_file)
     _run_blocking(
-        job, registry, ctx,
+        job,
+        registry,
+        ctx,
         planner=lambda profile: _plan(),
         insighter=lambda job, png: "insight",
         reporter=None,

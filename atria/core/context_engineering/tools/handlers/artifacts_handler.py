@@ -5,9 +5,8 @@ from __future__ import annotations
 import base64
 import logging
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
-from atria.core.context_engineering.tools.context import ToolExecutionContext
 from atria.db.repositories.artifact_repo import ArtifactRepository
 from atria.db.sync import run_sync
 
@@ -94,9 +93,7 @@ class ArtifactsToolHandler:
                     artifact_repo.list_by_conversation_and_scope(conversation_id, scope)
                 )
             elif scope == "project" and project_id:
-                artifacts = run_sync(
-                    artifact_repo.list_by_project_and_scope(project_id, scope)
-                )
+                artifacts = run_sync(artifact_repo.list_by_project_and_scope(project_id, scope))
             elif scope == "both":
                 # Fetch from both scopes and combine results
                 if conversation_id:
@@ -121,14 +118,16 @@ class ArtifactsToolHandler:
             # Transform database results into response format
             result_artifacts = []
             for artifact in artifacts:
-                result_artifacts.append({
-                    "id": artifact.get("id"),
-                    "filename": artifact.get("title", ""),
-                    "type": artifact.get("type", ""),
-                    "size": artifact.get("size", 0),
-                    "scope": artifact.get("scope", ""),
-                    "created_at": artifact.get("created_at"),
-                })
+                result_artifacts.append(
+                    {
+                        "id": artifact.get("id"),
+                        "filename": artifact.get("title", ""),
+                        "type": artifact.get("type", ""),
+                        "size": artifact.get("size", 0),
+                        "scope": artifact.get("scope", ""),
+                        "created_at": artifact.get("created_at"),
+                    }
+                )
 
             return {
                 "success": True,
@@ -136,6 +135,7 @@ class ArtifactsToolHandler:
             }
         except Exception as exc:
             import traceback
+
             logger.error(f"Error listing artifact images: {exc}")
             logger.error(traceback.format_exc())
             return {

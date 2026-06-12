@@ -148,9 +148,7 @@ class TestHardDelete:
         assert artifact is not None
 
         # Hard delete via API
-        response = artifacts_client.delete(
-            f"/api/artifacts/{artifact_id}?hard_delete=true"
-        )
+        response = artifacts_client.delete(f"/api/artifacts/{artifact_id}?hard_delete=true")
         assert response.status_code == 200
 
         # Verify file deleted from disk
@@ -358,9 +356,7 @@ class TestErrorCases:
 class TestFileMetadata:
     """Test file metadata handling."""
 
-    async def test_upload_preserves_filename(
-        self, temp_conversation, db_session, artifacts_client
-    ):
+    async def test_upload_preserves_filename(self, temp_conversation, db_session, artifacts_client):
         """Test that upload preserves original filename in artifact title."""
         image_data = b"\x89PNG\r\n\x1a\n" + b"test" * 50
         original_filename = "my_screenshot.png"
@@ -383,9 +379,7 @@ class TestFileMetadata:
         artifact = await artifact_repo.get_by_id(data["artifact_id"])
         assert artifact["title"] == original_filename
 
-    async def test_upload_correct_file_size(
-        self, temp_conversation, db_session, artifacts_client
-    ):
+    async def test_upload_correct_file_size(self, temp_conversation, db_session, artifacts_client):
         """Test that uploaded file size is correctly recorded."""
         image_data = b"\x89PNG\r\n\x1a\n" + b"test" * 100
         expected_size = len(image_data)
@@ -464,9 +458,7 @@ class TestLocalPathStorage:
         artifact_repo = ArtifactRepository(db_session)
         artifact = await artifact_repo.get_by_id(artifact_id)
         assert artifact["local_path"] is not None
-        assert artifact["local_path"].startswith(
-            f"conversations/{temp_conversation['id']}"
-        )
+        assert artifact["local_path"].startswith(f"conversations/{temp_conversation['id']}")
         assert artifact["local_path"].endswith(".png")
 
     async def test_project_artifact_local_path_stored(
@@ -509,9 +501,7 @@ class TestSoftDelete:
         assert file_path.exists()
 
         # Soft delete (hard_delete=false or omitted)
-        response = artifacts_client.delete(
-            f"/api/artifacts/{artifact_id}?hard_delete=false"
-        )
+        response = artifacts_client.delete(f"/api/artifacts/{artifact_id}?hard_delete=false")
         assert response.status_code == 200
 
         # Verify file still exists on disk

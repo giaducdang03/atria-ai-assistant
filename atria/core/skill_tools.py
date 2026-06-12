@@ -56,16 +56,12 @@ class SkillToolContext:
     llm_vision: Callable[[str, str, str], str] | None = None
     # Model identifier (for display/logging).
     llm_model: str | None = None
-    logger: logging.Logger = field(
-        default_factory=lambda: logging.getLogger("atria.skill_tools")
-    )
+    logger: logging.Logger = field(default_factory=lambda: logging.getLogger("atria.skill_tools"))
 
 
 # ─── append to atria/core/skill_tools.py ─────────────────────────────────────
 
-_FRONTMATTER_TOOLS_RE = re.compile(
-    r"^---\s*\n(.*?)\n---", re.DOTALL
-)
+_FRONTMATTER_TOOLS_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 
 
 class SkillToolError(RuntimeError):
@@ -93,14 +89,10 @@ class SkillToolLoader:
             module = self._import_tools_module(skill_md.parent, tools_file)
             register_fn = getattr(module, "register", None)
             if register_fn is None:
-                raise SkillToolError(
-                    f"{tools_file}: missing required `register(ctx)` function"
-                )
+                raise SkillToolError(f"{tools_file}: missing required `register(ctx)` function")
             produced = register_fn(ctx)
             if not isinstance(produced, list):
-                raise SkillToolError(
-                    f"{tools_file}: register() must return list[ToolSpec]"
-                )
+                raise SkillToolError(f"{tools_file}: register() must return list[ToolSpec]")
             for spec in produced:
                 if not isinstance(spec, ToolSpec):
                     raise SkillToolError(
@@ -108,8 +100,7 @@ class SkillToolLoader:
                     )
                 if spec.name in seen:
                     raise SkillToolError(
-                        f"Duplicate tool name {spec.name!r}: "
-                        f"{seen[spec.name]} and {tools_file}"
+                        f"Duplicate tool name {spec.name!r}: " f"{seen[spec.name]} and {tools_file}"
                     )
                 seen[spec.name] = tools_file
                 specs.append(spec)
@@ -141,9 +132,7 @@ class SkillToolLoader:
                 p = (skill_md.parent / value).resolve()
                 if p.exists():
                     return p
-                raise SkillToolError(
-                    f"{skill_md}: declared tools file {value!r} not found"
-                )
+                raise SkillToolError(f"{skill_md}: declared tools file {value!r} not found")
         return None
 
     @staticmethod

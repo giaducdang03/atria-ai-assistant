@@ -12,17 +12,9 @@ class Persona:
     """A persona configuration for an agent."""
 
     name: str
-    description: str
+    system_prompt: str
     is_built_in: bool = False
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    # Main agent customizations
-    agent_tone: Optional[str] = None
-    agent_style: Optional[str] = None
-    agent_behavior: Optional[str] = None
-    # Section overrides (section_name -> content)
-    section_overrides: Dict[str, str] = field(default_factory=dict)
-    # Subagent overrides (subagent_name -> persona_content)
-    subagent_overrides: Dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert persona to dictionary."""
@@ -134,13 +126,8 @@ class PersonaManager:
 
         new_persona = Persona(
             name=new_name,
-            description=f"Copy of {source.name}",
+            system_prompt=source.system_prompt,
             is_built_in=False,
-            agent_tone=source.agent_tone,
-            agent_style=source.agent_style,
-            agent_behavior=source.agent_behavior,
-            section_overrides=source.section_overrides.copy(),
-            subagent_overrides=source.subagent_overrides.copy(),
         )
 
         self.save_persona(new_persona)

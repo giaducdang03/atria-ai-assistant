@@ -28,8 +28,9 @@ def _fake_chat(responses: list[str]) -> MagicMock:
 
 
 def test_valid_plan_parses() -> None:
-    plan = run_planning({"file_name": "x.csv", "row_count": 3, "columns": []},
-                       chat=_fake_chat([_VALID_PLAN]))
+    plan = run_planning(
+        {"file_name": "x.csv", "row_count": 3, "columns": []}, chat=_fake_chat([_VALID_PLAN])
+    )
     assert plan["sub_tables"][0]["name"] == "by_region"
     assert plan["charts"][0]["type"] == "bar"
 
@@ -50,5 +51,6 @@ def test_two_consecutive_failures_raise() -> None:
 def test_empty_plan_is_rejected() -> None:
     empty = '{"summary": "x", "sub_tables": [], "charts": []}'
     with pytest.raises(PlanningError, match="no work"):
-        run_planning({"file_name": "x.csv", "row_count": 3, "columns": []},
-                     chat=_fake_chat([empty]))
+        run_planning(
+            {"file_name": "x.csv", "row_count": 3, "columns": []}, chat=_fake_chat([empty])
+        )

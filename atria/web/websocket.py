@@ -197,9 +197,7 @@ class WebSocketManager:
 
         # Load session without mutating current_session, scoped to the caller.
         try:
-            session = await state.session_manager.get_session_by_id(
-                session_id, owner_id=owner_id
-            )
+            session = await state.session_manager.get_session_by_id(session_id, owner_id=owner_id)
         except FileNotFoundError:
             # Fallback: session may be newly created but not yet on disk
             current = await state.session_manager.get_current_session()

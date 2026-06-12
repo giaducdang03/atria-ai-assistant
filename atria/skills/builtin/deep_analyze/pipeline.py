@@ -51,53 +51,99 @@ def run_job(
 ) -> None:
     try:
         job.status = "loading"
-        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "load", "status": "start"})
+        _emit(
+            ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "load", "status": "start"}
+        )
         rows = load_to_sqlite(Path(job.file_path), job.dir / "data.db")
         job.profile = profile_schema(job.dir / "data.db", file_name=Path(job.file_path).name)
-        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "load",
-                    "status": "done", "rows": rows, "cols": len(job.profile["columns"])})
+        _emit(
+            ctx,
+            {
+                "type": "analyze.phase",
+                "job_id": job.job_id,
+                "phase": "load",
+                "status": "done",
+                "rows": rows,
+                "cols": len(job.profile["columns"]),
+            },
+        )
         if _check_cancel(ctx, job):
             return
 
         job.status = "planning"
-        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "plan", "status": "start"})
+        _emit(
+            ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "plan", "status": "start"}
+        )
         job.plan = planner(job.profile)
-        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "plan",
-                    "status": "done", "sub_tables": len(job.plan["sub_tables"]),
-                    "charts": len(job.plan["charts"])})
+        _emit(
+            ctx,
+            {
+                "type": "analyze.phase",
+                "job_id": job.job_id,
+                "phase": "plan",
+                "status": "done",
+                "sub_tables": len(job.plan["sub_tables"]),
+                "charts": len(job.plan["charts"]),
+            },
+        )
         if _check_cancel(ctx, job):
             return
 
         job.status = "extracting"
-        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "extract", "status": "start"})
+        _emit(
+            ctx,
+            {"type": "analyze.phase", "job_id": job.job_id, "phase": "extract", "status": "start"},
+        )
         job.sub_tables = _fanout_extract(ctx, registry, job, extractor)
-        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "extract", "status": "done"})
+        _emit(
+            ctx,
+            {"type": "analyze.phase", "job_id": job.job_id, "phase": "extract", "status": "done"},
+        )
         if _check_cancel(ctx, job):
             return
 
         successful = {s["name"] for s in job.sub_tables if s["status"] == "done"}
-        renderable = [c for c in job.plan["charts"]
-                      if c["source_table"].removeprefix("t_") in successful]
+        renderable = [
+            c for c in job.plan["charts"] if c["source_table"].removeprefix("t_") in successful
+        ]
 
         job.status = "rendering"
-        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "render", "status": "start"})
+        _emit(
+            ctx,
+            {"type": "analyze.phase", "job_id": job.job_id, "phase": "render", "status": "start"},
+        )
         job.charts = _fanout_render(ctx, registry, job, renderable, visualizer)
-        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "render", "status": "done"})
+        _emit(
+            ctx,
+            {"type": "analyze.phase", "job_id": job.job_id, "phase": "render", "status": "done"},
+        )
         if _check_cancel(ctx, job):
             return
 
         job.status = "insight"
-        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "insight", "status": "start"})
+        _emit(
+            ctx,
+            {"type": "analyze.phase", "job_id": job.job_id, "phase": "insight", "status": "start"},
+        )
         _fanout_insight(ctx, registry, job, insighter)
-        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "insight", "status": "done"})
+        _emit(
+            ctx,
+            {"type": "analyze.phase", "job_id": job.job_id, "phase": "insight", "status": "done"},
+        )
         if _check_cancel(ctx, job):
             return
 
         job.status = "reporting"
-        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "report", "status": "start"})
+        _emit(
+            ctx,
+            {"type": "analyze.phase", "job_id": job.job_id, "phase": "report", "status": "start"},
+        )
         fn = reporter or default_reporter
         job.report_path = fn(job)
-        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "report", "status": "done"})
+        _emit(
+            ctx,
+            {"type": "analyze.phase", "job_id": job.job_id, "phase": "report", "status": "done"},
+        )
         _emit(ctx, {"type": "analyze.report", "job_id": job.job_id, "pdf_path": job.report_path})
 
         job.status = "done"
@@ -106,7 +152,10 @@ def run_job(
         logger.exception("deep_analyze job failed: %s", e)
         job.status = "failed"
         job.error = str(e)
-        _emit(ctx, {"type": "analyze.failed", "job_id": job.job_id, "phase": job.status, "error": str(e)})
+        _emit(
+            ctx,
+            {"type": "analyze.failed", "job_id": job.job_id, "phase": job.status, "error": str(e)},
+        )
     finally:
         job._done_event.set()
 
@@ -119,13 +168,30 @@ def _fanout_extract(ctx, registry, job, extractor):
         try:
             rows = fut.result()
             results.append({"name": spec["name"], "rows": rows, "status": "done"})
-            _emit(ctx, {"type": "analyze.subtable", "job_id": job.job_id,
-                        "name": spec["name"], "rows": rows, "status": "done"})
+            _emit(
+                ctx,
+                {
+                    "type": "analyze.subtable",
+                    "job_id": job.job_id,
+                    "name": spec["name"],
+                    "rows": rows,
+                    "status": "done",
+                },
+            )
         except Exception as e:
             logger.warning("subtable %s failed: %s", spec["name"], e)
             results.append({"name": spec["name"], "rows": 0, "status": "failed", "error": str(e)})
-            _emit(ctx, {"type": "analyze.subtable", "job_id": job.job_id,
-                        "name": spec["name"], "rows": 0, "status": "failed", "error": str(e)})
+            _emit(
+                ctx,
+                {
+                    "type": "analyze.subtable",
+                    "job_id": job.job_id,
+                    "name": spec["name"],
+                    "rows": 0,
+                    "status": "failed",
+                    "error": str(e),
+                },
+            )
     return results
 
 
@@ -152,15 +218,41 @@ def _fanout_render(ctx, registry, job, charts, visualizer):
     for spec, fut in zip(charts, futures):
         try:
             png = fut.result()
-            results.append({"name": spec["name"], "png_path": png, "insight_md": None, "status": "done"})
-            _emit(ctx, {"type": "analyze.chart", "job_id": job.job_id, "name": spec["name"],
-                        "png_path": png, "status": "done"})
+            results.append(
+                {"name": spec["name"], "png_path": png, "insight_md": None, "status": "done"}
+            )
+            _emit(
+                ctx,
+                {
+                    "type": "analyze.chart",
+                    "job_id": job.job_id,
+                    "name": spec["name"],
+                    "png_path": png,
+                    "status": "done",
+                },
+            )
         except Exception as e:
             logger.warning("chart %s failed: %s", spec["name"], e)
-            results.append({"name": spec["name"], "png_path": None, "insight_md": None,
-                            "status": "failed", "error": str(e)})
-            _emit(ctx, {"type": "analyze.chart", "job_id": job.job_id, "name": spec["name"],
-                        "png_path": None, "status": "failed", "error": str(e)})
+            results.append(
+                {
+                    "name": spec["name"],
+                    "png_path": None,
+                    "insight_md": None,
+                    "status": "failed",
+                    "error": str(e),
+                }
+            )
+            _emit(
+                ctx,
+                {
+                    "type": "analyze.chart",
+                    "job_id": job.job_id,
+                    "name": spec["name"],
+                    "png_path": None,
+                    "status": "failed",
+                    "error": str(e),
+                },
+            )
     return results
 
 
@@ -172,8 +264,11 @@ def _run_render(job, spec, visualizer, chart_tool):
             db_path=str(job.dir / "data.db"),
             source_table=spec["source_table"],
             chart_type=spec["type"],
-            x=spec["x"], y=spec["y"], title=spec["title"],
-            out_path=png, agg=spec.get("agg"),
+            x=spec["x"],
+            y=spec["y"],
+            title=spec["title"],
+            out_path=png,
+            agg=spec.get("agg"),
         )
         if not res["success"]:
             raise RuntimeError(res["error"])
@@ -189,10 +284,27 @@ def _fanout_insight(ctx, registry, job, insighter):
         try:
             md = fut.result()
             c["insight_md"] = md
-            _emit(ctx, {"type": "analyze.insight", "job_id": job.job_id,
-                        "name": c["name"], "md": md, "status": "done"})
+            _emit(
+                ctx,
+                {
+                    "type": "analyze.insight",
+                    "job_id": job.job_id,
+                    "name": c["name"],
+                    "md": md,
+                    "status": "done",
+                },
+            )
         except Exception as e:
             logger.warning("insight %s failed: %s", c["name"], e)
             c["insight_md"] = None
-            _emit(ctx, {"type": "analyze.insight", "job_id": job.job_id,
-                        "name": c["name"], "md": None, "status": "failed", "error": str(e)})
+            _emit(
+                ctx,
+                {
+                    "type": "analyze.insight",
+                    "job_id": job.job_id,
+                    "name": c["name"],
+                    "md": None,
+                    "status": "failed",
+                    "error": str(e),
+                },
+            )

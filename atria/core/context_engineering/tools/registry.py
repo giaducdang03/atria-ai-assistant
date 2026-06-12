@@ -117,6 +117,8 @@ def _wire_llm_into_ctx(skill_ctx: SkillToolContext, app_config: Any | None) -> N
     skill_ctx.llm_chat = llm_chat
     skill_ctx.llm_vision = llm_vision
     skill_ctx.llm_model = model
+
+
 from atria.core.context_engineering.tools.implementations.agents_tool import AgentsTool
 from atria.core.context_engineering.tools.implementations.patch_tool import PatchTool
 from atria.core.context_engineering.tools.implementations.pdf_tool import PDFTool
@@ -250,8 +252,8 @@ class ToolRegistry:
             "kill_process": self._process_handler.kill_process,
             "fetch_url": self._web_handler.fetch_url,
             "web_search": self._web_search_handler.search,
-            "chart":                self._chart_handler_new.chart,
-            "md_to_pdf":            self._md_to_pdf_handler_new.md_to_pdf,
+            "chart": self._chart_handler_new.chart,
+            "md_to_pdf": self._md_to_pdf_handler_new.md_to_pdf,
             "notebook_edit": self._notebook_edit_handler.edit_cell,
             "ask_user": self._ask_user_handler.ask_questions,
             "open_browser": self._open_browser,

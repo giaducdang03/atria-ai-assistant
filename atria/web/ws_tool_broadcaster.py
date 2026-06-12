@@ -161,7 +161,10 @@ class WebSocketToolBroadcaster:
         else:
             try:
                 payload = self._make_json_safe(
-                    {"type": etype or "skill_event", "data": {**event, "session_id": self.session_id}}
+                    {
+                        "type": etype or "skill_event",
+                        "data": {**event, "session_id": self.session_id},
+                    }
                 )
                 future = asyncio.run_coroutine_threadsafe(
                     self.ws_manager.broadcast(payload), self.loop

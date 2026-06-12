@@ -36,7 +36,8 @@ class DeepAnalyzeEngine:
         from openai import OpenAI  # noqa: PLC0415
 
         return OpenAI(
-            api_key=os.environ.get("DEEP_RESEARCH_API_KEY", "") or os.environ.get("OPENAI_API_KEY", ""),
+            api_key=os.environ.get("DEEP_RESEARCH_API_KEY", "")
+            or os.environ.get("OPENAI_API_KEY", ""),
             base_url=os.environ.get("DEEP_RESEARCH_BASE_URL", "https://api.openai.com/v1"),
         )
 
@@ -66,10 +67,13 @@ class DeepAnalyzeEngine:
             model=os.environ.get("DEEP_RESEARCH_MODEL", "gpt-4o-mini"),
             messages=[
                 {"role": "system", "content": system},
-                {"role": "user", "content": [
-                    {"type": "text", "text": user_text},
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
-                ]},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": user_text},
+                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                    ],
+                },
             ],
         )
         return (resp.choices[0].message.content or "").strip()
@@ -81,8 +85,10 @@ class DeepAnalyzeEngine:
             job_dir = self._job_root(session_id) / job_id
             (job_dir / "charts").mkdir(parents=True, exist_ok=True)
             job = AnalyzeJob(
-                job_id=job_id, session_id=session_id,
-                file_path=str(validated), dir=job_dir,
+                job_id=job_id,
+                session_id=session_id,
+                file_path=str(validated),
+                dir=job_dir,
             )
 
             def planner(profile):
@@ -122,9 +128,13 @@ class DeepAnalyzeEngine:
             self._registry.submit(
                 job,
                 lambda j: run_job(
-                    self._ctx, self._registry, j,
-                    planner=planner, extractor=extractor,
-                    visualizer=visualizer, insighter=insighter,
+                    self._ctx,
+                    self._registry,
+                    j,
+                    planner=planner,
+                    extractor=extractor,
+                    visualizer=visualizer,
+                    insighter=insighter,
                     reporter=None,
                 ),
             )

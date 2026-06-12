@@ -45,9 +45,7 @@ class RenderChartHandler:
         if not data_path:
             return _fail("'data_path' is required")
         if chart_type not in _CHART_TYPES:
-            return _fail(
-                f"'chart_type' must be one of {sorted(_CHART_TYPES)}, got {chart_type!r}"
-            )
+            return _fail(f"'chart_type' must be one of {sorted(_CHART_TYPES)}, got {chart_type!r}")
         if not title:
             return _fail("'title' is required")
         if not out_path:
@@ -80,9 +78,7 @@ class RenderChartHandler:
             return _fail(f"Dataset exceeds {_MAX_ROWS:,} row cap (rows={len(df)})")
 
         missing = [
-            c
-            for c in ([x] if chart_type != "hist" else []) + list(y)
-            if c and c not in df.columns
+            c for c in ([x] if chart_type != "hist" else []) + list(y) if c and c not in df.columns
         ]
         if missing:
             available = ", ".join(df.columns)
@@ -90,9 +86,7 @@ class RenderChartHandler:
 
         for col in y:
             if not pd.api.types.is_numeric_dtype(df[col]):
-                return _fail(
-                    f"Column {col!r} must be numeric for chart_type={chart_type!r}"
-                )
+                return _fail(f"Column {col!r} must be numeric for chart_type={chart_type!r}")
 
         try:
             rows_plotted = self._plot(df, chart_type, x, y, title, agg, out)
@@ -132,9 +126,7 @@ class RenderChartHandler:
                 rows = int(df[y[0]].dropna().shape[0])
             elif chart_type == "pie":
                 grouped = self._aggregate(df, x, y[:1], agg or "sum")
-                grouped[y[0]].plot(
-                    kind="pie", ax=ax, labels=grouped.index, autopct="%1.1f%%"
-                )
+                grouped[y[0]].plot(kind="pie", ax=ax, labels=grouped.index, autopct="%1.1f%%")
                 ax.set_ylabel("")
                 rows = int(grouped.shape[0])
             elif chart_type == "scatter":
@@ -156,9 +148,7 @@ class RenderChartHandler:
             plt.close(fig)
         return rows
 
-    def _aggregate(
-        self, df: "pd.DataFrame", x: str, y: list[str], agg: str
-    ) -> "pd.DataFrame":
+    def _aggregate(self, df: "pd.DataFrame", x: str, y: list[str], agg: str) -> "pd.DataFrame":
         if agg == "none":
             return df.set_index(x)[y]
         grouped = df.groupby(x)[y]

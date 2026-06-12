@@ -347,9 +347,7 @@ class WebState:
                 "session_id": session_id,
                 "_event": event,
             }
-        self._schedule_async(
-            self._persist_pending("ask_user", request_id, session_id, data)
-        )
+        self._schedule_async(self._persist_pending("ask_user", request_id, session_id, data))
 
     def resolve_ask_user(
         self, request_id: str, answers: Optional[Dict], cancelled: bool = False
@@ -395,9 +393,7 @@ class WebState:
                 "session_id": session_id,
                 "_event": event,
             }
-        self._schedule_async(
-            self._persist_pending("plan_approval", request_id, session_id, data)
-        )
+        self._schedule_async(self._persist_pending("plan_approval", request_id, session_id, data))
 
     def resolve_plan_approval(self, request_id: str, action: str, feedback: str = "") -> bool:
         """Resolve a pending plan approval request."""
@@ -441,9 +437,7 @@ class WebState:
                 "session_id": session_id,
                 "_event": event,
             }
-        self._schedule_async(
-            self._persist_pending("taxonomy_review", request_id, session_id, data)
-        )
+        self._schedule_async(self._persist_pending("taxonomy_review", request_id, session_id, data))
 
     def resolve_taxonomy_review(
         self,
@@ -588,9 +582,7 @@ class WebState:
         topic: Optional[str] = None,
         instructions: Optional[str] = None,
     ) -> bool:
-        ok = self.resolve_taxonomy_review(
-            request_id, action, taxonomy, depth, topic, instructions
-        )
+        ok = self.resolve_taxonomy_review(request_id, action, taxonomy, depth, topic, instructions)
         response = {
             "action": action,
             "taxonomy": taxonomy,
