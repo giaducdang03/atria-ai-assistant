@@ -7,6 +7,11 @@ export function PersonaSelector() {
     return sid ? state.sessionStates[sid]?.selectedPersona : null;
   });
   const setSelectedPersona = useChatStore(state => state.setSelectedPersona);
+  const openSettingsModal = useChatStore(state => state.openSettingsModal);
+
+  const handleClick = () => {
+    openSettingsModal();
+  };
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -19,6 +24,7 @@ export function PersonaSelector() {
   return (
     <div className="flex items-center gap-2">
       <button
+        onClick={handleClick}
         className={`${pillBase} ${pillStyle}`}
         title={selectedPersona ? `Current persona: ${selectedPersona}` : 'Select a persona'}
       >

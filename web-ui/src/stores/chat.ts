@@ -170,6 +170,7 @@ interface ChatState {
   runningSessions: Set<string>;
   sessionListVersion: number;
   sidebarCollapsed: boolean;
+  settingsModalOpen: boolean;
 
   // Actions
   loadSession: (sessionId: string) => Promise<void>;
@@ -189,6 +190,8 @@ interface ChatState {
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setSelectedPersona: (personaName: string | null) => void;
+  openSettingsModal: () => void;
+  closeSettingsModal: () => void;
 }
 
 const AUTONOMY_CYCLE: Array<'Manual' | 'Semi-Auto' | 'Auto'> = ['Manual', 'Semi-Auto', 'Auto'];
@@ -204,6 +207,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   runningSessions: new Set<string>(),
   sessionListVersion: 0,
   sidebarCollapsed: false,
+  settingsModalOpen: false,
 
   bumpSessionList: () => set(state => ({ sessionListVersion: state.sessionListVersion + 1 })),
   toggleSidebar: () => set(state => ({ sidebarCollapsed: !state.sidebarCollapsed })),
@@ -216,6 +220,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }));
     }
   },
+  openSettingsModal: () => set({ settingsModalOpen: true }),
+  closeSettingsModal: () => set({ settingsModalOpen: false }),
 
   loadSession: async (sessionId: string) => {
     console.log(`[Frontend] Loading session ${sessionId}`);
