@@ -3,24 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
 import json
 import logging
 import os
 from typing import Any
 
-import httpx
-
 logger = logging.getLogger(__name__)
 
 _SERPER_URL = "https://google.serper.dev/search"
-
-
-async def _maybe_await(value: Any) -> Any:
-    """Await value if it is a coroutine, otherwise return it directly."""
-    if inspect.iscoroutine(value):
-        return await value
-    return value
 
 
 def _serper_search(query: str, max_results: int) -> list[dict[str, Any]]:
@@ -30,21 +20,14 @@ def _serper_search(query: str, max_results: int) -> list[dict[str, Any]]:
         return []
 
     async def _call() -> list[dict[str, Any]]:
+        import httpx
+
         headers = {"X-API-KEY": api_key, "Content-Type": "application/json"}
         payload = json.dumps({"q": query, "num": max_results})
-        ac = httpx.AsyncClient(timeout=20)
-        client = await _maybe_await(ac.__aenter__())
-        try:
-            post_cm = client.post(_SERPER_URL, headers=headers, content=payload)
-            resp = await _maybe_await(post_cm.__aenter__())
-            try:
-                resp.raise_for_status()
-                data = resp.json()
-            finally:
-                await _maybe_await(post_cm.__aexit__(None, None, None))
-        finally:
-            await _maybe_await(ac.__aexit__(None, None, None))
-
+        async with httpx.AsyncClient(timeout=20) as client:
+            resp = await client.post(_SERPER_URL, headers=headers, content=payload)
+            resp.raise_for_status()
+            data = resp.json()
         results = []
         for item in (data.get("organic") or [])[:max_results]:
             url = (item.get("link") or "").strip()
@@ -59,11 +42,7 @@ def _serper_search(query: str, max_results: int) -> list[dict[str, Any]]:
         return results
 
     try:
-        loop = asyncio.new_event_loop()
-        try:
-            return loop.run_until_complete(_call())
-        finally:
-            loop.close()
+        return asyncio.run(_call())
     except Exception:
         logger.debug("Serper search failed for %r", query)
         return []

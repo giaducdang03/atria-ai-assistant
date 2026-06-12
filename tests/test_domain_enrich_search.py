@@ -24,18 +24,18 @@ class TestSerperSearch:
                 {"title": "Python Docs", "link": "https://python.org", "snippet": "Official docs"},
             ]
         }
-        with patch("httpx.AsyncClient") as mock_client_cls:
-            mock_resp = MagicMock()
-            mock_resp.json.return_value = fake_response
-            mock_resp.raise_for_status = MagicMock()
-            mock_cm = MagicMock()
-            mock_cm.__aenter__ = MagicMock(return_value=mock_resp)
-            mock_cm.__aexit__ = MagicMock(return_value=False)
-            mock_client = MagicMock()
-            mock_client.post.return_value = mock_cm
-            mock_client_cls.return_value.__aenter__ = MagicMock(return_value=mock_client)
-            mock_client_cls.return_value.__aexit__ = MagicMock(return_value=False)
+        from unittest.mock import AsyncMock, patch as async_patch
 
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = fake_response
+        mock_resp.raise_for_status = MagicMock()
+
+        mock_client = AsyncMock()
+        mock_client.post.return_value = mock_resp
+
+        with async_patch("httpx.AsyncClient") as mock_client_cls:
+            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
             m = _import_search()
             results = m._serper_search("python", 5)
 
