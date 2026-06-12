@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -39,23 +40,40 @@ async def db_session():
 
 @pytest_asyncio.fixture
 async def temp_project(db_session):
-    """Create a temporary project with a root directory."""
+    """Create a temporary project with a root directory and workspace path."""
     import uuid
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        users = UserRepository(db_session)
-        projects = ProjectRepository(db_session)
+    # Create a persistent temp directory for the project (not auto-cleaned)
+    temp_dir = Path(tempfile.gettempdir()) / f"test_project_{uuid.uuid4().hex[:8]}"
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
-        # Use unique email to avoid conflicts
-        unique_email = f"test-project-{uuid.uuid4().hex[:8]}@atria.local"
-        uid = await users.upsert_by_email(unique_email)
-        pid = await projects.get_or_create(uid, "test-project")
+    users = UserRepository(db_session)
+    projects = ProjectRepository(db_session)
 
-        yield {
-            "id": pid,
-            "user_id": uid,
-            "root_directory": tmpdir,
-        }
+    # Use unique email to avoid conflicts
+    unique_email = f"test-project-{uuid.uuid4().hex[:8]}@atria.local"
+    uid = await users.upsert_by_email(unique_email)
+
+    # Create project with workspace_path
+    pid = await projects.create(
+        user_id=uid,
+        title="test-project",
+        workspace_path=str(temp_dir),
+    )
+
+    # Get the created project to verify it has workspace_path
+    project = await projects.get_by_id(pid)
+
+    yield {
+        "id": pid,
+        "user_id": uid,
+        "root_directory": str(temp_dir),
+        "workspace_path": str(temp_dir),
+    }
+
+    # Cleanup
+    shutil.rmtree(temp_dir, ignore_errors=True)
+    await projects.hard_delete(pid)
 
 
 @pytest_asyncio.fixture
