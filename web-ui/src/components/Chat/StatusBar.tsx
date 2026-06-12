@@ -1,3 +1,4 @@
+import { Settings2, Lock, Brain } from 'lucide-react';
 import { useChatStore } from '../../stores/chat';
 
 const MODE_STYLES = {
@@ -37,12 +38,8 @@ export function StatusBar() {
         className={`${pillBase} ${MODE_STYLES[status.mode]}`}
         title="Normal: full tool access · Plan: read-only exploration. Click to toggle (Shift+Tab)"
       >
-        {status.mode === 'plan' && (
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-        )}
-        {status.mode === 'normal' ? '⚙️' : '📋'} Mode: {status.mode === 'normal' ? 'Normal' : 'Plan'}
+        <Settings2 className="w-3 h-3" strokeWidth={2} />
+        Mode: {status.mode === 'normal' ? 'Normal' : 'Plan'}
       </button>
 
       {/* Autonomy pill */}
@@ -51,7 +48,8 @@ export function StatusBar() {
         className={`${pillBase} ${AUTONOMY_STYLES[status.autonomy_level]}`}
         title="Manual: approve each tool · Semi-Auto: auto-approve safe tools · Auto: approve all. Click to cycle (Ctrl+Shift+A)"
       >
-        🔒 Approval: {status.autonomy_level}
+        <Lock className="w-3 h-3" strokeWidth={2} />
+        Approval: {status.autonomy_level}
       </button>
 
       {/* Thinking pill */}
@@ -60,7 +58,8 @@ export function StatusBar() {
         className={`${pillBase} ${THINKING_STYLES[thinkingLevel] || THINKING_STYLES['Medium']}`}
         title="Controls how much the AI reasons before responding. Click to cycle (Ctrl+Shift+T)"
       >
-        💭 Think: {thinkingLevel}
+        <Brain className="w-3 h-3" strokeWidth={2} />
+        Think: {thinkingLevel}
       </button>
     </div>
   );
