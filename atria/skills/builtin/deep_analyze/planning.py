@@ -56,12 +56,11 @@ def run_planning(profile: Dict[str, Any], chat: Callable[[str, str], str]) -> Di
             return plan
         except PlanningError:
             raise
-        except json.JSONDecodeError as e:
-            last_err = e
-            logger.warning("planning parse failure (attempt %s): %s", attempt, e)
-        except ValueError as e:
-            raise PlanningError(str(e))
         except Exception as e:
-            last_err = e
+            # Preserve the first meaningful parse error; don't overwrite with
+            # a less descriptive exception (e.g. StopIteration from an
+            # exhausted mock in tests, or unexpected errors in attempt 2).
+            if last_err is None:
+                last_err = e
             logger.warning("planning parse failure (attempt %s): %s", attempt, e)
     raise PlanningError(f"planning failed after 2 attempts: {last_err}")

@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from atria.core.skill_tools import SkillToolContext
 
-from .dataloader import load_to_sqlite, profile_schema
+from .dataloader import load_to_sqlite
 from .jobs import AnalyzeJob, AnalyzeJobRegistry
 from .persistence import default_reporter
 from .profiler import build_rich_profile
@@ -59,9 +59,8 @@ def run_job(
         job.status = "loading"
         _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "load", "status": "start"})
         rows = load_to_sqlite(Path(job.file_path), job.dir / "data.db")
-        job.profile = profile_schema(job.dir / "data.db", file_name=Path(job.file_path).name)
         _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "load", "status": "done",
-                    "rows": rows, "cols": len(job.profile["columns"])})
+                    "rows": rows})
         if _check_cancel(ctx, job):
             return
 
@@ -69,6 +68,7 @@ def run_job(
         job.status = "profiling"
         _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "profile", "status": "start"})
         job.profile_rich = build_rich_profile(job.dir / "data.db", file_name=Path(job.file_path).name)
+        job.profile = job.profile_rich
         _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "profile", "status": "done"})
         if _check_cancel(ctx, job):
             return
