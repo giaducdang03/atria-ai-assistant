@@ -1,4 +1,4 @@
-"""Planning LLM call: dataset schema -> sub_tables + charts plan."""
+"""Planning LLM call: dataset profile -> sections + sub_tables + charts plan."""
 
 from __future__ import annotations
 
@@ -25,27 +25,19 @@ def _strip_fences(raw: str) -> str:
 
 
 def _strip_t_prefix(name: str) -> str:
-    """Planner LLMs sometimes return names with the ``t_`` prefix already
-    applied. The pipeline always re-applies ``t_`` when materializing, so
-    drop a leading ``t_`` here to avoid ``t_t_<name>`` table lookups."""
     return name[2:] if isinstance(name, str) and name.startswith("t_") else name
 
 
 def _parse_plan(raw: str) -> Dict[str, Any]:
     plan = json.loads(_strip_fences(raw))
-    for key in ("sub_tables", "charts"):
+    for key in ("sub_tables", "charts", "sections"):
         if key not in plan or not isinstance(plan[key], list):
             raise ValueError(f"plan missing list `{key}`")
-    # Normalize sub-table names and chart source_table references so the
-    # pipeline can rely on bare names (without the ``t_`` prefix).
     for spec in plan["sub_tables"]:
         if isinstance(spec, dict) and "name" in spec:
             spec["name"] = _strip_t_prefix(spec["name"])
     for chart in plan["charts"]:
         if isinstance(chart, dict) and "source_table" in chart:
-            # source_table is expected WITH the ``t_`` prefix (it's the real
-            # table name in SQLite). Only fix the case where the planner
-            # doubled it.
             st = chart["source_table"]
             if isinstance(st, str) and st.startswith("t_t_"):
                 chart["source_table"] = st[2:]
@@ -59,11 +51,16 @@ def run_planning(profile: Dict[str, Any], chat: Callable[[str, str], str]) -> Di
         try:
             raw = chat(PLANNING_SYSTEM, user)
             plan = _parse_plan(raw)
-            if not plan["sub_tables"] or not plan["charts"]:
+            if not plan["sub_tables"] or not plan["charts"] or not plan["sections"]:
                 raise PlanningError("planner produced no work")
             return plan
         except PlanningError:
             raise
+        except json.JSONDecodeError as e:
+            last_err = e
+            logger.warning("planning parse failure (attempt %s): %s", attempt, e)
+        except ValueError as e:
+            raise PlanningError(str(e))
         except Exception as e:
             last_err = e
             logger.warning("planning parse failure (attempt %s): %s", attempt, e)
