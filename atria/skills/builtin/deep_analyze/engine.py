@@ -6,13 +6,14 @@ import base64
 import os
 import uuid
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from atria.core.skill_tools import SkillToolContext
 
 from .jobs import AnalyzeJob, AnalyzeJobRegistry
 from .pipeline import run_job
 from .planning import run_planning
+from .synthesis import synthesize_executive_summary, synthesize_key_findings, synthesize_section
 from .validation import validate_input
 
 
@@ -23,10 +24,6 @@ class DeepAnalyzeEngine:
         self._fallback_root = Path.home() / ".atria" / "sessions"
 
     def _job_root(self, session_id: str) -> Path:
-        # Prefer the conversation workspace so artifacts.scan picks up charts +
-        # data.db and the viewer can resolve them as relative payload_refs.
-        # Fall back to the session-scoped legacy path only when no workspace
-        # is wired (e.g. CLI/TUI without working_dir).
         wd = self._ctx.working_dir
         if wd:
             return Path(wd) / "analyze"
@@ -91,12 +88,12 @@ class DeepAnalyzeEngine:
                 dir=job_dir,
             )
 
-            def planner(profile):
+            def planner(profile: Dict[str, Any]) -> Dict[str, Any]:
                 return run_planning(profile, chat=self._chat)
 
             dispatcher = self._ctx.subagent_dispatcher
 
-            def extractor(job_, spec):
+            def extractor(job_: AnalyzeJob, spec: Dict[str, Any]) -> None:
                 if dispatcher is None:
                     return
                 dispatcher(
@@ -108,7 +105,7 @@ class DeepAnalyzeEngine:
                     ),
                 )
 
-            def visualizer(job_, spec):
+            def visualizer(job_: AnalyzeJob, spec: Dict[str, Any]) -> None:
                 if dispatcher is None:
                     return
                 png = str(job_.dir / "charts" / f"{spec['name']}.png")
@@ -122,8 +119,31 @@ class DeepAnalyzeEngine:
                     ),
                 )
 
-            def insighter(_job, png_path):
+            def insighter(_job: AnalyzeJob, png_path: str) -> str:
                 return self._vision_insight(png_path)
+
+            def synthesizer(
+                section: Dict[str, Any], stats_evidence: str, chart_insights: List[str]
+            ) -> str:
+                return synthesize_section(
+                    section_name=section["name"],
+                    description=section.get("description", ""),
+                    angles=section.get("analysis_angles", []),
+                    stats_evidence=stats_evidence,
+                    chart_insights=chart_insights,
+                    chat_fn=self._chat,
+                )
+
+            def post_synthesizer(job_: AnalyzeJob) -> tuple[str, str]:
+                section_contents = [
+                    {"name": s["name"], "content": s.get("content") or ""}
+                    for s in job_.sections
+                ]
+                kf = synthesize_key_findings(section_contents, self._chat)
+                es = synthesize_executive_summary(
+                    Path(job_.file_path).name, section_contents, kf, self._chat
+                )
+                return kf, es
 
             self._registry.submit(
                 job,
@@ -135,6 +155,8 @@ class DeepAnalyzeEngine:
                     extractor=extractor,
                     visualizer=visualizer,
                     insighter=insighter,
+                    synthesizer=synthesizer,
+                    post_synthesizer=post_synthesizer,
                     reporter=None,
                 ),
             )
@@ -144,8 +166,8 @@ class DeepAnalyzeEngine:
                 )
             bg_summary = (
                 f"Deep analyze started on `{validated.name}` (job `{job_id}`). "
-                "Poll `get_analyze_status(job_id=...)` for progress; charts and the "
-                "final PDF stream to chat as they complete."
+                "Poll `get_analyze_status(job_id=...)` for progress; the final report "
+                "streams to chat when complete."
             )
             return {
                 "success": True,
@@ -169,21 +191,20 @@ class DeepAnalyzeEngine:
                 {"name": c["name"], "png_path": c["png_path"], "insight_md": c["insight_md"]}
                 for c in job.charts
             ],
+            "sections": [
+                {"name": s["name"], "has_content": bool(s.get("content"))} for s in job.sections
+            ],
             "report_path": job.report_path,
             "error": job.error,
         }
         summary = (
             f"job {job_id}: status={job.status}, "
-            f"sub_tables={len(job.sub_tables)}, charts={len(job.charts)}"
+            f"sub_tables={len(job.sub_tables)}, charts={len(job.charts)}, "
+            f"sections={len(job.sections)}"
             + (f", report={job.report_path}" if job.report_path else "")
             + (f", error={job.error}" if job.error else "")
         )
-        return {
-            "success": True,
-            "output": summary,
-            "details": details,
-            "error": None,
-        }
+        return {"success": True, "output": summary, "details": details, "error": None}
 
     def cancel_analyze(self, job_id: str) -> Dict[str, Any]:
         job = self._registry.get(job_id)
@@ -191,9 +212,4 @@ class DeepAnalyzeEngine:
         if job is not None and job.status not in {"done", "failed", "cancelled"}:
             job.cancel_event.set()
             ok = True
-        return {
-            "success": True,
-            "output": f"cancelled={ok}",
-            "cancelled": ok,
-            "error": None,
-        }
+        return {"success": True, "output": f"cancelled={ok}", "cancelled": ok, "error": None}
