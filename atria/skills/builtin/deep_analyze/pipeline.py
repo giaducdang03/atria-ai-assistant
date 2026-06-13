@@ -136,9 +136,10 @@ def run_job(
 
     except Exception as e:
         logger.exception("deep_analyze job failed: %s", e)
+        failed_phase = job.status
         job.status = "failed"
         job.error = str(e)
-        _emit(ctx, {"type": "analyze.failed", "job_id": job.job_id, "phase": job.status, "error": str(e)})
+        _emit(ctx, {"type": "analyze.failed", "job_id": job.job_id, "phase": failed_phase, "error": str(e)})
     finally:
         job._done_event.set()
 
