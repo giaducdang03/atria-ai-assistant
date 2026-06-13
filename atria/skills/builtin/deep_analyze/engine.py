@@ -6,7 +6,7 @@ import base64
 import os
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from atria.core.skill_tools import SkillToolContext
 
@@ -134,7 +134,7 @@ class DeepAnalyzeEngine:
                     chat_fn=self._chat,
                 )
 
-            def post_synthesizer(job_: AnalyzeJob) -> tuple[str, str]:
+            def post_synthesizer(job_: AnalyzeJob) -> Tuple[str, str]:
                 section_contents = [
                     {"name": s["name"], "content": s.get("content") or ""}
                     for s in job_.sections

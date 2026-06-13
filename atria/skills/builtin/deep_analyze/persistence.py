@@ -8,6 +8,10 @@ from typing import Any, Dict, List
 from .jobs import AnalyzeJob
 
 
+def _escape_md(val: Any) -> str:
+    return str(val).replace("|", "\\|")
+
+
 def _profile_table(columns: List[Dict[str, Any]]) -> List[str]:
     lines = [
         "| Column | Type | Mean / Top Value | Nulls | Outliers | Skew |",
@@ -23,12 +27,14 @@ def _profile_table(columns: List[Dict[str, Any]]) -> List[str]:
             skew = col.get("skewness")
             skew_str = f"{skew:.2f}" if skew is not None else "—"
             lines.append(
-                f"| {col['name']} | {dtype} | {mean_str} | {null_pct} | {outliers} | {skew_str} |"
+                f"| {_escape_md(col['name'])} | {dtype} | {mean_str} | {null_pct} | {outliers} | {skew_str} |"
             )
         else:
             tvs = col.get("top_values", [])
             top = tvs[0]["value"] if tvs else "—"
-            lines.append(f"| {col['name']} | {dtype} | {top} | {null_pct} | — | — |")
+            lines.append(
+                f"| {_escape_md(col['name'])} | {dtype} | {_escape_md(top)} | {null_pct} | — | — |"
+            )
     return lines
 
 
