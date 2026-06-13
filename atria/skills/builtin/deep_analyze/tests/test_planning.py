@@ -92,3 +92,22 @@ def test_empty_sections_list_rejected() -> None:
         run_planning(
             {"file_name": "x.csv", "row_count": 3, "columns": []}, chat=_fake_chat([empty_sections])
         )
+
+
+def test_domain_brief_injected_into_system_prompt() -> None:
+    chat = _fake_chat([_VALID_PLAN])
+    run_planning(
+        {"file_name": "x.csv", "row_count": 3, "columns": []},
+        chat=chat,
+        domain_brief="workforce automation 2030",
+    )
+    system_arg = chat.call_args[0][0]
+    assert "Domain context" in system_arg
+    assert "workforce automation 2030" in system_arg
+
+
+def test_no_domain_brief_leaves_system_unchanged() -> None:
+    chat = _fake_chat([_VALID_PLAN])
+    run_planning({"file_name": "x.csv", "row_count": 3, "columns": []}, chat=chat)
+    system_arg = chat.call_args[0][0]
+    assert "Domain context" not in system_arg

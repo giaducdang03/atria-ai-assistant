@@ -27,6 +27,8 @@ class AnalyzeJob:
     sections: List[Dict[str, Any]] = field(default_factory=list)
     exec_summary: Optional[str] = None
     key_findings: Optional[str] = None
+    domain_brief: str = ""
+    domain_context: str = ""
     report_path: Optional[str] = None
     cancel_event: threading.Event = field(default_factory=threading.Event)
     _done_event: threading.Event = field(default_factory=threading.Event)

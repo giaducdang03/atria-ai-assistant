@@ -6,7 +6,16 @@ PARAMS_DEEP_ANALYZE = {
         "file_path": {
             "type": "string",
             "description": "Absolute path to a .csv or .xlsx file.",
-        }
+        },
+        "domain_context": {
+            "type": "string",
+            "description": (
+                "Optional framing for domain enrichment "
+                "(e.g. 'workforce automation 2030'). "
+                "If omitted, the topic is inferred from the filename."
+            ),
+            "default": "",
+        },
     },
     "required": ["file_path"],
 }

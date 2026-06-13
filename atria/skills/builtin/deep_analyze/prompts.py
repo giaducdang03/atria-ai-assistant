@@ -1,6 +1,6 @@
 """LLM system prompts for deep_analyze."""
 
-PLANNING_SYSTEM = """\
+_PLANNING_SYSTEM_BASE = """\
 You are a data-analysis planner. Given a rich dataset profile (with column stats, correlations,
 and significance tests), output a JSON analysis plan.
 
@@ -36,3 +36,13 @@ Return exactly this structure:
   ]
 }
 """
+
+
+def build_planning_system(domain_brief: str = "") -> str:
+    if not domain_brief:
+        return _PLANNING_SYSTEM_BASE
+    domain_block = (
+        f"\nDomain context (use this vocabulary and framing when naming sections "
+        f"and choosing analysis angles):\n{domain_brief}\n"
+    )
+    return _PLANNING_SYSTEM_BASE + domain_block

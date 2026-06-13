@@ -39,7 +39,11 @@ def synthesize_section(
     stats_evidence: str,
     chart_insights: List[str],
     chat_fn: ChatFn,
+    domain_brief: str = "",
 ) -> str:
+    system = _SECTION_SYSTEM
+    if domain_brief:
+        system += f"\n\nDomain context:\n{domain_brief}"
     angles_str = "\n".join(f"- {a}" for a in angles) if angles else "- general analysis"
     charts_str = "\n\n".join(chart_insights) if chart_insights else "(no charts rendered)"
     user = (
@@ -51,7 +55,7 @@ def synthesize_section(
         "Write the section now."
     )
     try:
-        return chat_fn(_SECTION_SYSTEM, user)
+        return chat_fn(system, user)
     except Exception as e:
         logger.error("synthesize_section failed [%s]: %s", section_name, e)
         return f"*Section synthesis unavailable: {e}*"
@@ -79,7 +83,11 @@ def synthesize_executive_summary(
     section_contents: List[Dict[str, Any]],
     key_findings: str,
     chat_fn: ChatFn,
+    domain_brief: str = "",
 ) -> str:
+    system = _EXEC_SYSTEM
+    if domain_brief:
+        system += f"\n\nDomain context:\n{domain_brief}"
     sections_block = "\n\n".join(
         f"### {s['name']}\n{s['content']}" for s in section_contents if s.get("content")
     )
@@ -90,7 +98,7 @@ def synthesize_executive_summary(
         "Write the executive summary."
     )
     try:
-        return chat_fn(_EXEC_SYSTEM, user)
+        return chat_fn(system, user)
     except Exception as e:
         logger.error("synthesize_executive_summary failed: %s", e)
         return "*Executive summary unavailable*"

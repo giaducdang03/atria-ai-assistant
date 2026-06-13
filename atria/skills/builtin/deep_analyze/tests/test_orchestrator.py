@@ -75,6 +75,7 @@ def _run_blocking(
     synthesizer=lambda section, stats, charts: f"Narrative for {section['name']}",
     post_synthesizer=lambda job: ("- Finding 1", "Executive summary."),
     reporter=None,
+    enricher=None,
     timeout: float = 30,
 ) -> None:
     registry.submit(
@@ -90,6 +91,7 @@ def _run_blocking(
             synthesizer=synthesizer,
             post_synthesizer=post_synthesizer,
             reporter=reporter,
+            enricher=enricher,
         ),
     )
     job._done_event.wait(timeout=timeout)
@@ -113,7 +115,7 @@ def test_happy_path(csv_file: Path, tmp_path: Path) -> None:
     phases = [
         e["phase"] for e in events if e.get("type") == "analyze.phase" and e.get("status") == "done"
     ]
-    assert phases == ["load", "profile", "plan", "extract", "render", "insight", "synthesize", "report"]
+    assert phases == ["enrich", "load", "profile", "plan", "extract", "render", "insight", "synthesize", "report"]
     with sqlite3.connect(job.dir / "data.db") as cx:
         assert cx.execute("SELECT COUNT(*) FROM t_by_region").fetchone()[0] == 3
 
@@ -257,3 +259,42 @@ def test_default_reporter_produces_pdf(csv_file: Path, tmp_path: Path) -> None:
     assert job.status == "done"
     assert job.report_path and Path(job.report_path).exists()
     assert Path(job.report_path).read_bytes()[:4] == b"%PDF"
+
+
+def test_domain_brief_populated_after_enrich(csv_file: Path, tmp_path: Path) -> None:
+    ctx = SkillToolContext()
+    registry = AnalyzeJobRegistry()
+    job = _make_job(tmp_path, "s_enrich", csv_file)
+
+    _run_blocking(
+        job,
+        registry,
+        ctx,
+        planner=lambda profile: _plan(),
+        enricher=lambda topic, context: {"summary": f"Domain brief for {topic}", "sources": []},
+        reporter=lambda job: str(job.dir / "report.pdf"),
+    )
+
+    assert job.status == "done"
+    assert job.domain_brief == "Domain brief for sales"
+
+
+def test_enricher_failure_does_not_abort_job(csv_file: Path, tmp_path: Path) -> None:
+    ctx = SkillToolContext()
+    registry = AnalyzeJobRegistry()
+    job = _make_job(tmp_path, "s_enrich_fail", csv_file)
+
+    def failing_enricher(topic: str, context: str) -> dict:
+        raise RuntimeError("network failure")
+
+    _run_blocking(
+        job,
+        registry,
+        ctx,
+        planner=lambda profile: _plan(),
+        enricher=failing_enricher,
+        reporter=lambda job: str(job.dir / "report.pdf"),
+    )
+
+    assert job.status == "done"
+    assert job.domain_brief == ""

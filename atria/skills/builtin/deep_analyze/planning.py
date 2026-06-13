@@ -6,7 +6,7 @@ import json
 import logging
 from typing import Any, Callable, Dict, Optional
 
-from .prompts import PLANNING_SYSTEM
+from .prompts import build_planning_system
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +44,17 @@ def _parse_plan(raw: str) -> Dict[str, Any]:
     return plan
 
 
-def run_planning(profile: Dict[str, Any], chat: Callable[[str, str], str]) -> Dict[str, Any]:
+def run_planning(
+    profile: Dict[str, Any],
+    chat: Callable[[str, str], str],
+    domain_brief: str = "",
+) -> Dict[str, Any]:
+    system = build_planning_system(domain_brief)
     user = json.dumps(profile, ensure_ascii=False)
     last_err: Optional[Exception] = None
     for attempt in (1, 2):
         try:
-            raw = chat(PLANNING_SYSTEM, user)
+            raw = chat(system, user)
             plan = _parse_plan(raw)
             if not plan["sub_tables"] or not plan["charts"] or not plan["sections"]:
                 raise PlanningError("planner produced no work")
@@ -57,9 +62,6 @@ def run_planning(profile: Dict[str, Any], chat: Callable[[str, str], str]) -> Di
         except PlanningError:
             raise
         except Exception as e:
-            # Preserve the first meaningful parse error; don't overwrite with
-            # a less descriptive exception (e.g. StopIteration from an
-            # exhausted mock in tests, or unexpected errors in attempt 2).
             if last_err is None:
                 last_err = e
             logger.warning("planning parse failure (attempt %s): %s", attempt, e)

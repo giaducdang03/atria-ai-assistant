@@ -75,7 +75,7 @@ class DeepAnalyzeEngine:
         )
         return (resp.choices[0].message.content or "").strip()
 
-    def deep_analyze(self, file_path: str, session_id: str = "default") -> Dict[str, Any]:
+    def deep_analyze(self, file_path: str, session_id: str = "default", domain_context: str = "") -> Dict[str, Any]:
         try:
             validated = validate_input(file_path)
             job_id = uuid.uuid4().hex[:12]
@@ -86,10 +86,21 @@ class DeepAnalyzeEngine:
                 session_id=session_id,
                 file_path=str(validated),
                 dir=job_dir,
+                domain_context=domain_context,
             )
 
+            def enricher(topic: str, context: str) -> Dict[str, Any]:
+                from atria.skills.builtin.domain_enrich import engine as enrich_engine  # noqa: PLC0415
+                return enrich_engine.run_enrich(
+                    topic=topic,
+                    context=context,
+                    chat_fn=self._chat,
+                    working_dir=str(job.dir),
+                    on_artifact=self._ctx.on_artifact,
+                )
+
             def planner(profile: Dict[str, Any]) -> Dict[str, Any]:
-                return run_planning(profile, chat=self._chat)
+                return run_planning(profile, domain_brief=job.domain_brief, chat=self._chat)
 
             dispatcher = self._ctx.subagent_dispatcher
 
@@ -131,6 +142,7 @@ class DeepAnalyzeEngine:
                     angles=section.get("analysis_angles", []),
                     stats_evidence=stats_evidence,
                     chart_insights=chart_insights,
+                    domain_brief=job.domain_brief,
                     chat_fn=self._chat,
                 )
 
@@ -141,7 +153,11 @@ class DeepAnalyzeEngine:
                 ]
                 kf = synthesize_key_findings(section_contents, self._chat)
                 es = synthesize_executive_summary(
-                    Path(job_.file_path).name, section_contents, kf, self._chat
+                    Path(job_.file_path).name,
+                    section_contents,
+                    kf,
+                    self._chat,
+                    domain_brief=job_.domain_brief,
                 )
                 return kf, es
 
@@ -158,6 +174,7 @@ class DeepAnalyzeEngine:
                     synthesizer=synthesizer,
                     post_synthesizer=post_synthesizer,
                     reporter=None,
+                    enricher=enricher,
                 ),
             )
             if self._ctx.broadcaster:
@@ -186,6 +203,7 @@ class DeepAnalyzeEngine:
             return {"success": False, "output": "unknown job_id", "error": "unknown job_id"}
         details = {
             "status": job.status,
+            "domain_brief_available": bool(job.domain_brief),
             "sub_tables": job.sub_tables,
             "charts": [
                 {"name": c["name"], "png_path": c["png_path"], "insight_md": c["insight_md"]}

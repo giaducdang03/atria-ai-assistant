@@ -23,6 +23,7 @@ InsighterFn = Callable[[AnalyzeJob, str], str]
 SynthesizerFn = Callable[[Dict[str, Any], str, List[str]], str]
 PostSynthesizerFn = Callable[[AnalyzeJob], Tuple[str, str]]
 ReporterFn = Callable[[AnalyzeJob], str]
+EnricherFn = Callable[[str, str], Dict[str, Any]]
 
 
 def _emit(ctx: SkillToolContext, event: Dict[str, Any]) -> None:
@@ -42,6 +43,12 @@ def _check_cancel(ctx: SkillToolContext, job: AnalyzeJob) -> bool:
     return False
 
 
+def _infer_topic(filename: str) -> str:
+    import re  # noqa: PLC0415
+    stem = Path(filename).stem
+    return re.sub(r"[_\-]+", " ", stem).strip()
+
+
 def run_job(
     ctx: SkillToolContext,
     registry: AnalyzeJobRegistry,
@@ -53,8 +60,24 @@ def run_job(
     synthesizer: SynthesizerFn,
     post_synthesizer: PostSynthesizerFn,
     reporter: Optional[ReporterFn] = None,
+    enricher: Optional[EnricherFn] = None,
 ) -> None:
     try:
+        # ── enrich ────────────────────────────────────────────────────────────
+        job.status = "enriching"
+        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "enrich", "status": "start"})
+        if enricher is not None:
+            try:
+                topic = _infer_topic(Path(job.file_path).name)
+                result = enricher(topic, job.domain_context)
+                job.domain_brief = result.get("summary", "") or ""
+            except Exception as _enrich_err:
+                logger.warning("domain enrichment failed (continuing): %s", _enrich_err)
+                job.domain_brief = ""
+        _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "enrich", "status": "done"})
+        if _check_cancel(ctx, job):
+            return
+
         # ── load ──────────────────────────────────────────────────────────────
         job.status = "loading"
         _emit(ctx, {"type": "analyze.phase", "job_id": job.job_id, "phase": "load", "status": "start"})

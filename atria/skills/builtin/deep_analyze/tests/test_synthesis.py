@@ -89,3 +89,31 @@ def test_synthesize_key_findings_skips_sections_without_content() -> None:
     _, user_prompt = chat.call_args[0]
     assert "Good" in user_prompt
     assert "Empty" not in user_prompt
+
+
+def test_synthesize_section_domain_brief_in_system_prompt() -> None:
+    chat = _chat("narrative text")
+    synthesize_section(
+        section_name="Risk",
+        description="Risk analysis.",
+        angles=["risk premium"],
+        stats_evidence="risk: mean=3.2",
+        chart_insights=[],
+        chat_fn=chat,
+        domain_brief="workforce automation 2030",
+    )
+    system_arg = chat.call_args[0][0]
+    assert "workforce automation 2030" in system_arg
+
+
+def test_synthesize_exec_summary_domain_brief_in_system_prompt() -> None:
+    chat = _chat("exec summary text")
+    synthesize_executive_summary(
+        dataset_name="jobs.csv",
+        section_contents=[{"name": "Risk", "content": "Risk prose."}],
+        key_findings="- Finding 1",
+        chat_fn=chat,
+        domain_brief="workforce automation 2030",
+    )
+    system_arg = chat.call_args[0][0]
+    assert "workforce automation 2030" in system_arg
