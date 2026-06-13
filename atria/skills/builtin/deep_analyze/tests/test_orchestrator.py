@@ -23,6 +23,14 @@ def csv_file(tmp_path: Path) -> Path:
 def _plan() -> dict:
     return {
         "summary": "s",
+        "sections": [
+            {
+                "name": "Revenue Overview",
+                "description": "How revenue varies by region.",
+                "chart_names": ["regional"],
+                "analysis_angles": ["total revenue", "regional mix"],
+            }
+        ],
         "sub_tables": [
             {
                 "name": "by_region",
@@ -38,7 +46,6 @@ def _plan() -> dict:
                 "x": "region",
                 "y": ["r"],
                 "title": "Regional",
-                "why": "",
             },
         ],
     }
@@ -65,6 +72,8 @@ def _run_blocking(
     extractor=lambda job, spec: None,
     visualizer=lambda job, spec: None,
     insighter=lambda job, png: "insight",
+    synthesizer=lambda section, stats, charts: f"Narrative for {section['name']}",
+    post_synthesizer=lambda job: ("- Finding 1", "Executive summary."),
     reporter=None,
     timeout: float = 30,
 ) -> None:
@@ -78,6 +87,8 @@ def _run_blocking(
             extractor=extractor,
             visualizer=visualizer,
             insighter=insighter,
+            synthesizer=synthesizer,
+            post_synthesizer=post_synthesizer,
             reporter=reporter,
         ),
     )
@@ -102,9 +113,46 @@ def test_happy_path(csv_file: Path, tmp_path: Path) -> None:
     phases = [
         e["phase"] for e in events if e.get("type") == "analyze.phase" and e.get("status") == "done"
     ]
-    assert phases == ["load", "plan", "extract", "render", "insight", "report"]
+    assert phases == ["load", "profile", "plan", "extract", "render", "insight", "synthesize", "report"]
     with sqlite3.connect(job.dir / "data.db") as cx:
         assert cx.execute("SELECT COUNT(*) FROM t_by_region").fetchone()[0] == 3
+
+
+def test_sections_populated_after_planning(csv_file: Path, tmp_path: Path) -> None:
+    ctx = SkillToolContext()
+    registry = AnalyzeJobRegistry()
+    job = _make_job(tmp_path, "s_sec", csv_file)
+
+    _run_blocking(
+        job,
+        registry,
+        ctx,
+        planner=lambda profile: _plan(),
+        reporter=lambda job: str(job.dir / "report.pdf"),
+    )
+
+    assert job.status == "done"
+    assert len(job.sections) == 1
+    assert job.sections[0]["name"] == "Revenue Overview"
+    assert job.sections[0].get("content") == "Narrative for Revenue Overview"
+
+
+def test_exec_summary_and_findings_populated(csv_file: Path, tmp_path: Path) -> None:
+    ctx = SkillToolContext()
+    registry = AnalyzeJobRegistry()
+    job = _make_job(tmp_path, "s_es", csv_file)
+
+    _run_blocking(
+        job,
+        registry,
+        ctx,
+        planner=lambda profile: _plan(),
+        post_synthesizer=lambda j: ("- Finding A", "Exec summary text."),
+        reporter=lambda job: str(job.dir / "report.pdf"),
+    )
+
+    assert job.key_findings == "- Finding A"
+    assert job.exec_summary == "Exec summary text."
 
 
 def test_subtable_failure_does_not_abort_job(csv_file: Path, tmp_path: Path) -> None:
@@ -120,7 +168,6 @@ def test_subtable_failure_does_not_abort_job(csv_file: Path, tmp_path: Path) -> 
             "x": "region",
             "y": ["r"],
             "title": "x",
-            "why": "",
         }
     )
     ctx = SkillToolContext()
@@ -159,6 +206,8 @@ def test_cancel_before_render(csv_file: Path, tmp_path: Path) -> None:
             extractor=slow_extractor,
             visualizer=lambda job, spec: None,
             insighter=lambda job, png: "ok",
+            synthesizer=lambda s, ev, ci: "narrative",
+            post_synthesizer=lambda j: ("findings", "summary"),
             reporter=lambda job: "x",
         ),
     )
