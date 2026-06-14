@@ -70,12 +70,11 @@ def _run_blocking(
     *,
     planner,
     extractor=lambda job, spec: None,
-    visualizer=lambda job, spec: None,
-    insighter=lambda job, png: "insight",
     synthesizer=lambda section, stats, charts: f"Narrative for {section['name']}",
     post_synthesizer=lambda job: ("- Finding 1", "Executive summary."),
     reporter=None,
     enricher=None,
+    plan_modifier=None,
     timeout: float = 30,
 ) -> None:
     registry.submit(
@@ -86,12 +85,11 @@ def _run_blocking(
             j,
             planner=planner,
             extractor=extractor,
-            visualizer=visualizer,
-            insighter=insighter,
             synthesizer=synthesizer,
             post_synthesizer=post_synthesizer,
             reporter=reporter,
             enricher=enricher,
+            plan_modifier=plan_modifier,
         ),
     )
     job._done_event.wait(timeout=timeout)
@@ -115,7 +113,7 @@ def test_happy_path(csv_file: Path, tmp_path: Path) -> None:
     phases = [
         e["phase"] for e in events if e.get("type") == "analyze.phase" and e.get("status") == "done"
     ]
-    assert phases == ["enrich", "load", "profile", "plan", "extract", "render", "insight", "synthesize", "report"]
+    assert phases == ["load", "profile", "enrich", "plan", "extract", "synthesize", "report"]
     with sqlite3.connect(job.dir / "data.db") as cx:
         assert cx.execute("SELECT COUNT(*) FROM t_by_region").fetchone()[0] == 3
 
@@ -206,8 +204,6 @@ def test_cancel_before_render(csv_file: Path, tmp_path: Path) -> None:
             j,
             planner=lambda profile: _plan(),
             extractor=slow_extractor,
-            visualizer=lambda job, spec: None,
-            insighter=lambda job, png: "ok",
             synthesizer=lambda s, ev, ci: "narrative",
             post_synthesizer=lambda j: ("findings", "summary"),
             reporter=lambda job: "x",
@@ -276,7 +272,7 @@ def test_domain_brief_populated_after_enrich(csv_file: Path, tmp_path: Path) -> 
     )
 
     assert job.status == "done"
-    assert job.domain_brief == "Domain brief for sales"
+    assert job.domain_brief.startswith("Domain brief for sales")
 
 
 def test_enricher_failure_does_not_abort_job(csv_file: Path, tmp_path: Path) -> None:

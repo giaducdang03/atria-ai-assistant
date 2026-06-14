@@ -29,9 +29,11 @@ class AnalyzeJob:
     key_findings: Optional[str] = None
     domain_brief: str = ""
     domain_context: str = ""
+    depth: str = "standard"
     report_path: Optional[str] = None
     cancel_event: threading.Event = field(default_factory=threading.Event)
     _done_event: threading.Event = field(default_factory=threading.Event)
+    _profile_ready: threading.Event = field(default_factory=threading.Event)
 
 
 class AnalyzeJobRegistry:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import os
 import uuid
 from pathlib import Path
@@ -15,6 +14,61 @@ from .pipeline import run_job
 from .planning import run_planning
 from .synthesis import synthesize_executive_summary, synthesize_key_findings, synthesize_section
 from .validation import validate_input
+
+
+def _format_profile_summary(file_name: str, job_id: str, profile: Dict[str, Any], error: Any) -> str:
+    """Build a rich dataset summary for the agent to use as its opening response."""
+    if error:
+        return f"Analysis of `{file_name}` failed during load/profile: {error}"
+
+    if not profile:
+        return (
+            f"Analysis of `{file_name}` is running (job `{job_id}`). "
+            "Profile not yet available — progress streams live in chat."
+        )
+
+    row_count = profile.get("row_count", "?")
+    cols = profile.get("columns", [])
+    col_count = len(cols)
+
+    # Top columns with key stats
+    col_lines: List[str] = []
+    for col in cols[:15]:
+        dtype = col.get("dtype", "?")
+        name = col.get("name", "?")
+        if dtype in {"int", "float"}:
+            parts = []
+            if col.get("mean") is not None:
+                parts.append(f"mean={col['mean']:.2f}")
+            if col.get("min") is not None and col.get("max") is not None:
+                parts.append(f"range=[{col['min']:.2f}, {col['max']:.2f}]")
+            if col.get("nulls"):
+                parts.append(f"nulls={col['nulls']}")
+            col_lines.append(f"  - {name} ({dtype}): {', '.join(parts)}")
+        else:
+            top = col.get("top_values", [])[:3]
+            top_str = ", ".join(f"{v['value']}({v['count']})" for v in top) if top else "—"
+            col_lines.append(f"  - {name} ({dtype}): top={top_str}")
+
+    # Notable correlations
+    corr_lines: List[str] = []
+    for c in profile.get("correlations", []):
+        if c.get("notable"):
+            corr_lines.append(f"  - {c['col_a']} ↔ {c['col_b']} (r={c.get('r', '?'):.2f})")
+
+    lines = [
+        f"Analysis of `{file_name}` started (job `{job_id}`).",
+        f"Dataset: {row_count:,} rows × {col_count} columns.",
+        "",
+        "Column overview:",
+        *col_lines,
+    ]
+    if col_count > 15:
+        lines.append(f"  ... and {col_count - 15} more columns.")
+    if corr_lines:
+        lines += ["", "Notable correlations:", *corr_lines]
+    lines += ["", "Analysis is running in the background — charts and insights will stream into the chat as each phase completes."]
+    return "\n".join(lines)
 
 
 class DeepAnalyzeEngine:
@@ -50,32 +104,7 @@ class DeepAnalyzeEngine:
         )
         return (resp.choices[0].message.content or "").strip()
 
-    def _vision_insight(self, png_path: str) -> str:
-        with open(png_path, "rb") as fh:
-            b64 = base64.b64encode(fh.read()).decode()
-        system = (
-            "You are a data-analysis assistant. Describe the chart, the "
-            "takeaway, and any anomalies, in 3-6 sentences of markdown."
-        )
-        user_text = "Analyze this chart:"
-        if self._ctx.llm_vision is not None:
-            return self._ctx.llm_vision(system, user_text, b64)
-        resp = self._client().chat.completions.create(
-            model=os.environ.get("DEEP_RESEARCH_MODEL", "gpt-4o-mini"),
-            messages=[
-                {"role": "system", "content": system},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": user_text},
-                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
-                    ],
-                },
-            ],
-        )
-        return (resp.choices[0].message.content or "").strip()
-
-    def deep_analyze(self, file_path: str, session_id: str = "default", domain_context: str = "") -> Dict[str, Any]:
+    def deep_analyze(self, file_path: str, session_id: str = "default", domain_context: str = "", depth: str = "standard") -> Dict[str, Any]:
         try:
             validated = validate_input(file_path)
             job_id = uuid.uuid4().hex[:12]
@@ -87,6 +116,7 @@ class DeepAnalyzeEngine:
                 file_path=str(validated),
                 dir=job_dir,
                 domain_context=domain_context,
+                depth=depth,
             )
 
             def enricher(topic: str, context: str) -> Dict[str, Any]:
@@ -100,7 +130,7 @@ class DeepAnalyzeEngine:
                 )
 
             def planner(profile: Dict[str, Any]) -> Dict[str, Any]:
-                return run_planning(profile, domain_brief=job.domain_brief, chat=self._chat)
+                return run_planning(profile, domain_brief=job.domain_brief, chat=self._chat, depth=job.depth)
 
             dispatcher = self._ctx.subagent_dispatcher
 
@@ -116,22 +146,9 @@ class DeepAnalyzeEngine:
                     ),
                 )
 
-            def visualizer(job_: AnalyzeJob, spec: Dict[str, Any]) -> None:
-                if dispatcher is None:
-                    return
-                png = str(job_.dir / "charts" / f"{spec['name']}.png")
-                dispatcher(
-                    agent="Visualizer",
-                    task=(
-                        f"Render chart `{spec['name']}` from the SQLite DB at "
-                        f"{job_.dir / 'data.db'}, table `{spec['source_table']}`. "
-                        f"Spec: type={spec['type']}, x={spec['x']}, y={spec['y']}, "
-                        f"title={spec['title']!r}. Output PNG: {png}."
-                    ),
-                )
-
-            def insighter(_job: AnalyzeJob, png_path: str) -> str:
-                return self._vision_insight(png_path)
+            def plan_modifier(plan: Dict[str, Any], instructions: str) -> Dict[str, Any]:
+                from atria.skills.builtin.deep_analyze.planning import modify_plan  # noqa: PLC0415
+                return modify_plan(plan, instructions, self._chat)
 
             def synthesizer(
                 section: Dict[str, Any], stats_evidence: str, chart_insights: List[str]
@@ -161,6 +178,7 @@ class DeepAnalyzeEngine:
                 )
                 return kf, es
 
+            _chat_fn = self._chat
             self._registry.submit(
                 job,
                 lambda j: run_job(
@@ -169,29 +187,29 @@ class DeepAnalyzeEngine:
                     j,
                     planner=planner,
                     extractor=extractor,
-                    visualizer=visualizer,
-                    insighter=insighter,
                     synthesizer=synthesizer,
                     post_synthesizer=post_synthesizer,
+                    chat_fn=_chat_fn,
                     reporter=None,
                     enricher=enricher,
+                    plan_modifier=plan_modifier,
                 ),
             )
             if self._ctx.broadcaster:
                 self._ctx.broadcaster(
                     {"type": "analyze.started", "job_id": job_id, "file_name": validated.name}
                 )
-            bg_summary = (
-                f"Deep analyze started on `{validated.name}` (job `{job_id}`). "
-                "Poll `get_analyze_status(job_id=...)` for progress; the final report "
-                "streams to chat when complete."
-            )
+
+            # Wait for load+profile to finish (up to 90s) so we can give the
+            # agent real dataset stats to work with instead of a placeholder.
+            profile_ready = job._profile_ready.wait(timeout=90)
+            profile = job.profile_rich if profile_ready else {}
+            summary = _format_profile_summary(validated.name, job_id, profile, job.error)
             return {
                 "success": True,
-                "output": bg_summary,
+                "output": summary,
                 "job_id": job_id,
                 "_bg_task_started": True,
-                "_bg_summary": bg_summary,
                 "error": None,
             }
         except Exception as e:

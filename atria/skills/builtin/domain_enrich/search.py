@@ -51,7 +51,7 @@ def _serper_search(query: str, max_results: int) -> list[dict[str, Any]]:
 def _ddg_search(query: str, max_results: int) -> list[dict[str, Any]]:
     """DuckDuckGo search fallback. Returns [] on error."""
     try:
-        from duckduckgo_search import DDGS
+        from ddgs import DDGS
 
         results = []
         with DDGS() as ddgs:

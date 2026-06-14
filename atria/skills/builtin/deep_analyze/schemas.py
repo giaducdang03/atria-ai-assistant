@@ -16,6 +16,16 @@ PARAMS_DEEP_ANALYZE = {
             ),
             "default": "",
         },
+        "depth": {
+            "type": "string",
+            "enum": ["fast", "standard", "deep"],
+            "description": (
+                "Analysis depth. 'fast' = 2 sections & 3 charts, "
+                "'standard' = 3-4 sections & 4 charts (default), "
+                "'deep' = 5 sections & 6 charts."
+            ),
+            "default": "standard",
+        },
     },
     "required": ["file_path"],
 }

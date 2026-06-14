@@ -169,6 +169,58 @@ class WebUICallback(BaseUICallback):
             "instructions": pending.get("instructions"),
         }
 
+    def request_plan_review(
+        self,
+        job_id: str,
+        review_request_id: str,
+        event_payload: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Block until user accepts/modifies/regenerates the analysis plan."""
+        done_event = threading.Event()
+
+        self.state.add_pending_plan_review(
+            review_request_id,
+            {"job_id": job_id, "session_id": self.session_id},
+            session_id=self.session_id,
+            event=done_event,
+        )
+
+        if event_payload is not None:
+            data = {k: v for k, v in event_payload.items() if k != "type"}
+            data["session_id"] = self.session_id
+            self._broadcast({"type": "analyze.plan_ready", "data": data})
+
+        logger.info(f"Blocking for plan review: {review_request_id} / job {job_id}")
+
+        if not done_event.wait(timeout=600):
+            logger.warning(f"Plan review {review_request_id} timed out")
+            self.state.clear_plan_review(review_request_id)
+            return {"action": "accept"}
+
+        pending = self.state.get_pending_plan_review(review_request_id)
+        self.state.clear_plan_review(review_request_id)
+        if not pending:
+            return {"action": "accept"}
+
+        action = pending.get("action", "accept")
+        logger.info(f"Plan review {review_request_id} resolved: action={action}")
+        return {
+            "action": action,
+            "instructions": pending.get("instructions"),
+        }
+
+    def request_review(
+        self,
+        job_id: str,
+        review_request_id: str,
+        event_payload: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Unified review callback — dispatches by event_payload type."""
+        event_type = (event_payload or {}).get("type", "")
+        if event_type == "analyze.plan_ready":
+            return self.request_plan_review(job_id, review_request_id, event_payload)
+        return self.request_taxonomy_review(job_id, review_request_id, event_payload)
+
     # ------------------------------------------------------------------
     # Tool lifecycle (WebSocketToolBroadcaster handles the main events,
     # but we handle special post-tool events here)

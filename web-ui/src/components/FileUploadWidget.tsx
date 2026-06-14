@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback } from 'react';
+import { CloudUpload } from 'lucide-react';
 import { useArtifactUpload, type UploadScope } from '../hooks/useArtifactUpload';
 import { formatFileSize } from '../utils/fileUtils';
 
@@ -155,9 +156,7 @@ export function FileUploadWidget({
             disabled={uploading}
             className="hidden"
           />
-          <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-          </svg>
+          <CloudUpload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
           <p className="text-sm font-medium text-gray-700">Click to select files</p>
           <p className="text-xs text-gray-500 mt-1">or drag and drop</p>
           <p className="text-xs text-gray-400 mt-2">Max {maxFileSizeMB}MB per file</p>

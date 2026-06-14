@@ -32,6 +32,38 @@ Be direct and specific — no hedging or filler.\
 """
 
 
+_CHART_INSIGHT_SYSTEM = """\
+You are a data analyst writing a short insight about a single chart.
+Write 2-4 sentences of direct, specific prose — reference actual values, trends, or anomalies visible in the chart.
+No headings. No bullet lists. No filler phrases like "the chart shows". Begin directly with the finding.\
+"""
+
+
+def synthesize_chart_insight(
+    chart_title: str,
+    chart_type: str,
+    x_col: str,
+    y_cols: List[str],
+    stats_evidence: str,
+    chat_fn: ChatFn,
+    domain_brief: str = "",
+) -> str:
+    system = _CHART_INSIGHT_SYSTEM
+    if domain_brief:
+        system += f"\n\nDomain context:\n{domain_brief}"
+    user = (
+        f"Chart: {chart_title}\n"
+        f"Type: {chart_type} — x={x_col}, y={', '.join(y_cols)}\n\n"
+        f"Statistical evidence:\n{stats_evidence}\n\n"
+        "Write the insight."
+    )
+    try:
+        return chat_fn(system, user)
+    except Exception as e:
+        logger.error("synthesize_chart_insight failed [%s]: %s", chart_title, e)
+        return f"*Insight unavailable: {e}*"
+
+
 def synthesize_section(
     section_name: str,
     description: str,

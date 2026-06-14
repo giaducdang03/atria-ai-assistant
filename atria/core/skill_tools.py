@@ -49,6 +49,7 @@ class SkillToolContext:
     review_callback: Callable[[str, str, dict[str, Any]], dict[str, Any]] | None = None
     subagent_dispatcher: Callable[..., Any] | None = None
     on_artifact: Callable[[dict[str, Any]], None] | None = None
+    on_analyze_done: Callable[[dict[str, Any]], None] | None = None
     # Text-LLM call: (system, user) -> str. Wired from AppConfig so skills
     # reuse atria's configured api_key/api_base_url/model.
     llm_chat: Callable[[str, str], str] | None = None

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { LayoutGrid, Filter, FileText, Trash2 } from 'lucide-react';
 import type { Artifact } from '../types';
 import { ArtifactThumbnail } from './ArtifactThumbnail';
 
@@ -107,9 +108,7 @@ export function ArtifactPanel({
               }`}
               title="Grid view"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm11 0h7v7h-7v-7z" />
-              </svg>
+              <LayoutGrid className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('list')}
@@ -120,9 +119,7 @@ export function ArtifactPanel({
               }`}
               title="List view"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
+              <Filter className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -141,9 +138,7 @@ export function ArtifactPanel({
 
         {!isLoading && filteredArtifacts.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 p-4">
-            <svg className="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
+            <FileText className="w-12 h-12 mb-3 text-gray-300" />
             <p className="text-center">
               {artifacts.length === 0
                 ? 'No artifacts yet'
@@ -203,9 +198,7 @@ export function ArtifactPanel({
                     }}
                     className="ml-4 p-1.5 text-gray-400 hover:text-red-600 rounded transition-colors"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
               </div>

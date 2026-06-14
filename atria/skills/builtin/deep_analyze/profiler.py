@@ -73,7 +73,7 @@ def build_rich_profile(db_path: Path, file_name: str) -> Dict[str, Any]:
                             "col_a": c1,
                             "col_b": c2,
                             "r": round(float(r), 3),
-                            "notable": abs(r) > 0.7,
+                            "notable": bool(abs(r) > 0.7),
                         }
                     )
 

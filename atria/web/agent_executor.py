@@ -307,7 +307,28 @@ class AgentExecutor:
         # call time; deep_analyze reads ctx.subagent_dispatcher.
         skill_ctx = getattr(runtime_suite.tool_registry, "skill_ctx", None)
         if skill_ctx is not None:
-            skill_ctx.review_callback = web_ui_callback.request_taxonomy_review
+            skill_ctx.review_callback = web_ui_callback.request_review
+
+            _exec_state = self.state
+            _exec_loop = loop
+
+            def _on_analyze_done(job_data: Dict[str, Any]) -> None:
+                from atria.models.message import ChatMessage, Role  # noqa: PLC0415
+
+                async def _save() -> None:
+                    try:
+                        sess = await _exec_state.session_manager.get_current_session()
+                        if sess is None:
+                            return
+                        msg = ChatMessage(role=Role.ASSISTANT, content="", metadata=job_data)
+                        sess.add_message(msg)
+                        await _exec_state.session_manager.save_session(sess)
+                    except Exception as _e:
+                        logger.warning("Failed to save deep_analyze message: %s", _e)
+
+                asyncio.run_coroutine_threadsafe(_save(), _exec_loop)
+
+            skill_ctx.on_analyze_done = _on_analyze_done
 
             subagent_mgr_for_analyze = runtime_suite.tool_registry.get_subagent_manager()
             if subagent_mgr_for_analyze is not None:
@@ -418,8 +439,26 @@ class AgentExecutor:
 
                 hook_manager.run_hooks(HookEvent.SESSION_START, match_value="web_query")
 
+            # Expand @file mentions — TUI path does this via query_enhancer.prepare_messages
+            import re as _re
+            from atria.repl.file_content_injector import FileContentInjector
+
+            _injector = FileContentInjector(file_ops, config, working_dir)
+            _injection = _injector.inject_content(message)
+            if _injection.text_content:
+                # Strip @ prefix from file references so the agent doesn't
+                # construct tool paths with @ (e.g. @.artifacts/... → .artifacts/...)
+                _clean_msg = _re.sub(
+                    r'(?:^|(?<=\s)|(?<=[^\w]))@([a-zA-Z0-9_./\-]+)',
+                    r'\1',
+                    message,
+                )
+                query = _clean_msg + "\n\n" + _injection.text_content
+            else:
+                query = message
+
             summary, error, latency_ms = react_executor.execute(
-                query=message,
+                query=query,
                 messages=message_history,
                 agent=agent,
                 tool_registry=wrapped_registry,

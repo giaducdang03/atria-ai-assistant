@@ -44,17 +44,42 @@ def _parse_plan(raw: str) -> Dict[str, Any]:
     return plan
 
 
+def _sanitize(obj: Any) -> Any:
+    """Recursively convert numpy scalars to native Python types for JSON safety."""
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize(v) for v in obj]
+    # numpy scalars expose __bool__/__float__/__int__ but aren't json-native
+    t = type(obj).__name__
+    if t.startswith("bool"):
+        return bool(obj)
+    if t.startswith("int") or t.startswith("uint"):
+        return int(obj)
+    if t.startswith("float"):
+        return float(obj)
+    return obj
+
+
 def run_planning(
     profile: Dict[str, Any],
     chat: Callable[[str, str], str],
     domain_brief: str = "",
+    depth: str = "standard",
 ) -> Dict[str, Any]:
-    system = build_planning_system(domain_brief)
-    user = json.dumps(profile, ensure_ascii=False)
+    system = build_planning_system(domain_brief, depth)
+    user = json.dumps(_sanitize(profile), ensure_ascii=False)
+    import concurrent.futures  # noqa: PLC0415
+
     last_err: Optional[Exception] = None
     for attempt in (1, 2):
         try:
-            raw = chat(system, user)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                future = ex.submit(chat, system, user)
+                try:
+                    raw = future.result(timeout=300)
+                except concurrent.futures.TimeoutError:
+                    raise PlanningError("planning LLM call timed out after 300s")
             plan = _parse_plan(raw)
             if not plan["sub_tables"] or not plan["charts"] or not plan["sections"]:
                 raise PlanningError("planner produced no work")
@@ -66,3 +91,43 @@ def run_planning(
                 last_err = e
             logger.warning("planning parse failure (attempt %s): %s", attempt, e)
     raise PlanningError(f"planning failed after 2 attempts: {last_err}")
+
+
+_MODIFY_SYSTEM = (
+    "You are a data-analysis planner. The user has an existing analysis plan and wants "
+    "to modify it. Apply their instructions and return ONLY the updated plan as valid JSON "
+    "with the same structure: {summary, sections, sub_tables, charts}. "
+    "Follow the same rules as before: sub_tables must SELECT only from `raw`, "
+    "chart types must be bar/line/scatter/hist/pie, all referenced columns must exist. "
+    "Return ONLY valid JSON — no prose, no markdown fences."
+)
+
+
+def modify_plan(
+    plan: Dict[str, Any],
+    instructions: str,
+    chat: Callable[[str, str], str],
+    timeout: int = 90,
+) -> Dict[str, Any]:
+    """Apply user modification instructions to an existing plan via LLM.
+
+    Falls back to the original plan on parse failure or timeout.
+    """
+    import concurrent.futures  # noqa: PLC0415
+
+    user = (
+        f"Current plan:\n{json.dumps(_sanitize(plan), ensure_ascii=False)}\n\n"
+        f"Modification request: {instructions}"
+    )
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+            future = ex.submit(chat, _MODIFY_SYSTEM, user)
+            try:
+                raw = future.result(timeout=timeout)
+            except concurrent.futures.TimeoutError:
+                logger.warning("modify_plan timed out after %ds — keeping original plan", timeout)
+                return plan
+        return _parse_plan(raw)
+    except Exception as e:
+        logger.warning("modify_plan failed (%s) — keeping original plan", e)
+        return plan

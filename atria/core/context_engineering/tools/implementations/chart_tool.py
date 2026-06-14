@@ -200,7 +200,20 @@ class ChartTool:
             }
         try:
             with sqlite3.connect(db_path) as cx:
-                df = pd.read_sql_query(f"SELECT * FROM {source_table}", cx)
+                # Try source_table as-is first, then with t_ prefix as fallback
+                candidates = [source_table]
+                if not source_table.startswith("t_"):
+                    candidates.append(f"t_{source_table}")
+                df = None
+                last_err: Exception | None = None
+                for tbl in candidates:
+                    try:
+                        df = pd.read_sql_query(f"SELECT * FROM {tbl}", cx)
+                        break
+                    except Exception as e:
+                        last_err = e
+                if df is None:
+                    raise last_err  # type: ignore[misc]
         except Exception as e:
             return {
                 "success": False,

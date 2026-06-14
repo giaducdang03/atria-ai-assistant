@@ -94,6 +94,8 @@ class WebSocketManager:
             await self._handle_plan_approval_response(websocket, data)
         elif msg_type == "deep_research_taxonomy_response":
             await self._handle_taxonomy_response(websocket, data)
+        elif msg_type == "analyze_plan_response":
+            await self._handle_plan_review_response(websocket, data)
         elif msg_type == "ping":
             await self.send_message(websocket, {"type": WSMessageType.PONG})
         else:
@@ -420,6 +422,32 @@ class WebSocketManager:
             return
 
         logger.info(f"✓ Taxonomy review {request_id} resolved: action={action}, depth={depth}")
+
+    async def _handle_plan_review_response(self, websocket: WebSocket, data: Dict[str, Any]):
+        """Handle an analyze plan review response from the web UI."""
+        response_data = data.get("data", {})
+        request_id = response_data.get("requestId")
+        action = response_data.get("action", "accept")
+        instructions = response_data.get("instructions", "")
+
+        if not request_id:
+            await self.send_message(
+                websocket,
+                {"type": WSMessageType.ERROR, "data": {"message": "Missing requestId"}},
+            )
+            return
+
+        state = get_state()
+        success = await state.aresolve_plan_review(request_id, action, instructions or None)
+
+        if not success:
+            await self.send_message(
+                websocket,
+                {"type": WSMessageType.ERROR, "data": {"message": f"Plan review {request_id} not found"}},
+            )
+            return
+
+        logger.info(f"Plan review {request_id} resolved: action={action}")
 
 
 # Global WebSocket manager instance

@@ -15,7 +15,6 @@ import { useChatStore } from '../stores/chat';
 import { useArtifactsStore } from '../stores/artifacts';
 import { useProjectsStore } from '../stores/projects';
 import { useFileExplorerStore } from '../stores/fileExplorer';
-import { useFileChangesStore } from '../stores/fileChanges';
 import { useViewerTabsStore } from '../stores/viewerTabs';
 
 export function resetAllStores(): void {
@@ -40,23 +39,16 @@ export function resetAllStores(): void {
   useProjectsStore.setState({
     projects: [],
     conversations: {},
-    personalConversations: [],
+    workspaceProjectId: null,
     expandedProjects: new Set<string>(),
     isLoading: false,
     error: null,
   });
 
-  // File explorer / changes / viewer tabs are keyed by conv id; wipe them
+  // File explorer / viewer tabs are keyed by conv id; wipe them
   // so a fresh login doesn't leak the previous user's directory tree.
   useFileExplorerStore.setState({
     treesByConv: {},
-  });
-
-  useFileChangesStore.setState({
-    changes: [],
-    summary: null,
-    isLoading: false,
-    error: null,
   });
 
   useViewerTabsStore.setState({
