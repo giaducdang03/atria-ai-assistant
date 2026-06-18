@@ -7,7 +7,7 @@ version: 3.0.0
 # Planning
 
 For non-trivial implementation tasks, use the Planner subagent to explore
-the codebase and create a structured plan before writing code.
+the workspace and create a structured plan before writing code.
 
 Spawn via spawn_subagent(subagent_type="Planner"). Include in the prompt:
 - The task description and relevant context

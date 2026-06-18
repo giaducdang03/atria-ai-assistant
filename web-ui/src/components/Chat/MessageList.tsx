@@ -139,7 +139,7 @@ function WelcomeScreen() {
             Let&rsquo;s get to work.
           </h2>
           <p className="mt-5 text-body-sm text-ink/80">
-            Start a conversation with your AI coding assistant.
+            Start a conversation with your AI Data Analyst assistant.
           </p>
         </div>
       </div>

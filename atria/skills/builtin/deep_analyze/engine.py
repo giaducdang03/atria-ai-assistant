@@ -104,9 +104,36 @@ class DeepAnalyzeEngine:
         )
         return (resp.choices[0].message.content or "").strip()
 
+    def _resolve_input_file(self, file_path: str) -> str:
+        """Locate the input file robustly before validation.
+
+        The agent occasionally supplies a path that does not exist — e.g. a
+        bare filename, or a stale ``analyze/<job_id>/`` job directory it saw in
+        a prior run. Uploaded files always live under the conversation
+        ``working_dir`` (in the ``.artifacts`` tree). When the given path is
+        missing, fall back to locating the file by basename under the
+        workspace, preferring ``.artifacts`` where uploads live, so a wrong
+        agent-supplied path does not abort the analysis when the file exists.
+        """
+        p = Path(file_path).expanduser()
+        if p.exists():
+            return str(p)
+        wd = self._ctx.working_dir
+        if not wd:
+            return file_path
+        wd = Path(wd)
+        name = p.name
+        for root in (wd / ".artifacts", wd):
+            if not root.exists():
+                continue
+            matches = sorted(root.rglob(name))
+            if matches:
+                return str(matches[0])
+        return file_path
+
     def deep_analyze(self, file_path: str, session_id: str = "default", domain_context: str = "", depth: str = "standard") -> Dict[str, Any]:
         try:
-            validated = validate_input(file_path)
+            validated = validate_input(self._resolve_input_file(file_path))
             job_id = uuid.uuid4().hex[:12]
             job_dir = self._job_root(session_id) / job_id
             (job_dir / "charts").mkdir(parents=True, exist_ok=True)

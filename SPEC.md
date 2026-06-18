@@ -13,7 +13,7 @@
 
 ## Product Introduction
 
-**Atria** is a production-grade, AI-powered coding assistant that lives in your terminal and your browser. It pairs a reasoning **ReAct agent** with a fleet of **specialized subagents** and a deep **context-engineering layer**, so it can explore a codebase, plan changes, edit files, run commands, review pull requests, audit security, generate web apps, and operate across messaging channels — all while staying provider-agnostic and keeping the developer in control through an explicit approval system.
+**Atria** is a production-grade, AI-powered coding assistant that lives in your terminal and your browser. It pairs a reasoning **ReAct agent** with a fleet of **specialized subagents** and a deep **context-engineering layer**, so it can explore a workspace, plan changes, edit files, run commands, review pull requests, audit security, generate web apps, and operate across messaging channels — all while staying provider-agnostic and keeping the developer in control through an explicit approval system.
 
 Unlike a thin LLM wrapper, Atria is a **compound AI system**: the model decides each step (no hard-coded conversation flow), the context layer keeps long sessions coherent under token pressure, and a strategy memory lets the agent improve over time. It ships with two first-class front-ends (a Textual TUI and a React/FastAPI web app), a sandboxed Docker runtime for untrusted execution, and an extensible plugin/skill/MCP ecosystem.
 
@@ -24,7 +24,7 @@ Unlike a thin LLM wrapper, Atria is a **compound AI system**: the model decides 
 
 ### Highlighted Features
 
-- **🧠 Compound multi-agent architecture** — One main ReAct agent plus **10 specialized subagents** (Code-Explorer, Planner, PR-Reviewer, Security-Reviewer, Web-Generator, Web-Clone, Data-Extractor, Visualizer, Project-Init, Ask-User), dispatched in parallel via a single `spawn_subagent` call.
+- **🧠 Compound multi-agent architecture** — One main ReAct agent plus **10 specialized subagents** (Workspace-Explorer, Planner, PR-Reviewer, Security-Reviewer, Web-Generator, Web-Clone, Data-Extractor, Visualizer, Project-Init, Ask-User), dispatched in parallel via a single `spawn_subagent` call.
 
 - **🔌 Multi-provider, zero lock-in** — Works with **Anthropic, OpenAI, Azure, Fireworks, Groq, Mistral, DeepInfra, OpenRouter** (and more) behind a unified adapter, with **automatic API-key rotation**, per-status cooldowns, and reasoning-model awareness (o1/o3/gpt-5).
 
@@ -258,7 +258,7 @@ The main agent is composed of mixins: `RunLoopMixin` (the loop), `LlmCallsMixin`
 3. **Parse response** → content + `tool_calls`; record token usage for cost tracking.
 4. **Execute tools**:
    - **Parallel path**: if ≥2 tools and **all are read-only/parallelizable** (`read_file`, `search`, `list_files`, `fetch_url`, `web_search`, `analyze_image`, …) and none is `task_complete`, run via `ThreadPoolExecutor` (max 5 workers); UI spinners fire upfront, results stream as each completes.
-   - **Sequential path**: for writes, `task_complete`, or mixed tools. Enforces **explore-first** (blocks non-exempt subagents until Code-Explorer has run).
+   - **Sequential path**: for writes, `task_complete`, or mixed tools. Enforces **explore-first** (blocks non-exempt subagents until Workspace-Explorer has run).
 5. **Completion**: explicit `task_complete` tool returns immediately; otherwise an **implicit completion** path nudges the agent (up to 3 nudges) if the last tool failed or todos are incomplete, then returns cleaned content. Interrupts (ESC / WebSocket) return `interrupted=True`.
 
 Three LLM call types (`llm_calls.py`): `call_thinking_llm()` (reasoning only, routes to `model_thinking`), `call_critique_llm()` (critiques a thinking trace, routes to `model_critique`), `call_llm()` (action phase with tools, routes to VLM model when images present).
@@ -278,8 +278,8 @@ Subagents are spawned via the **`spawn_subagent`** tool. Each receives a fresh p
 
 ### The 10 subagents (`subagents/agents/`)
 - **ask-user** — UI-only; gathers user input via structured JSON questions (no tools/LLM).
-- **Code-Explorer** — deep codebase analysis; tools: `read_file`, `search`, `list_files`, `find_symbol`, `find_referencing_symbols`.
-- **Planner** — explores the codebase and writes an implementation plan (planning tools + `write_file`, `edit_file`).
+- **Workspace-Explorer** — deep workspace analysis; tools: `read_file`, `search`, `list_files`, `find_symbol`, `find_referencing_symbols`.
+- **Planner** — explores the workspace and writes an implementation plan (planning tools + `write_file`, `edit_file`).
 - **PR-Reviewer** — analyzes a GitHub PR for correctness/style/security.
 - **Security-Reviewer** — vulnerability audit with severity scoring.
 - **Project-Init** — project scaffolding / boilerplate generation.

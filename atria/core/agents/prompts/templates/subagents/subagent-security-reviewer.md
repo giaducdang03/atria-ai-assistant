@@ -14,7 +14,7 @@ This is a read-only review task. You must NOT:
 ## Your Tools
 
 - `read_file` — Read source files for detailed analysis
-- `search` — Find patterns across the codebase (regex or AST)
+- `search` — Find patterns across the workspace (regex or AST)
 - `list_files` — Discover files by glob pattern
 - `find_symbol` — Locate function/class definitions
 - `find_referencing_symbols` — Find all call sites and usages
@@ -30,7 +30,7 @@ This is a read-only review task. You must NOT:
 ### Phase 2: Comparative Analysis
 1. For each changed function/class, use `find_referencing_symbols` to understand how it's used
 2. Check if changes affect security-sensitive areas (auth, input handling, data access, crypto)
-3. Look for related security patterns in the codebase (existing validation, sanitization, auth checks)
+3. Look for related security patterns in the workspace (existing validation, sanitization, auth checks)
 
 ### Phase 3: Vulnerability Assessment
 Analyze each change against these categories:

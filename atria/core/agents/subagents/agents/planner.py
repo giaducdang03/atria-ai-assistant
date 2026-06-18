@@ -1,6 +1,6 @@
-"""Planner subagent for codebase exploration and planning.
+"""Planner subagent for workspace exploration and planning.
 
-This subagent explores the codebase, analyzes patterns, and writes
+This subagent explores the workspace, analyzes patterns, and writes
 a detailed implementation plan to a designated plan file.
 """
 
@@ -11,7 +11,7 @@ from atria.core.agents.components import PLANNING_TOOLS
 PLANNER_SUBAGENT = SubAgentSpec(
     name="Planner",
     description=(
-        "Codebase exploration and planning agent. Analyzes code, "
+        "Workspace exploration and planning agent. Analyzes code, "
         "understands patterns, identifies relevant files, and creates detailed "
         "implementation plans. Writes the plan to a designated file path "
         "provided in the prompt."

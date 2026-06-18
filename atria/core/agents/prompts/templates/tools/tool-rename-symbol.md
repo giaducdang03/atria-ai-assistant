@@ -1,15 +1,15 @@
 <!--
 name: 'Tool Description: rename_symbol'
-description: Rename a symbol across the entire codebase
+description: Rename a symbol across the entire workspace
 version: 2.0.0
 -->
 
-Rename a symbol across the entire codebase using LSP refactoring. This is a safe, semantic rename that updates all references to the symbol — function calls, imports, type annotations, and more.
+Rename a symbol across the entire workspace using LSP refactoring. This is a safe, semantic rename that updates all references to the symbol — function calls, imports, type annotations, and more.
 
 ## Usage notes
 
 - Uses LSP to understand code semantics, so it only renames actual references to the symbol — not unrelated text that happens to match
-- Updates all files in the codebase that reference the symbol
+- Updates all files in the workspace that reference the symbol
 - When to use vs search-and-replace (edit_file with match_all):
   - Use rename_symbol for safe semantic renames — it understands code structure and only changes actual references
   - Use edit_file match_all for simple text replacement when the string is unique and context doesn't matter

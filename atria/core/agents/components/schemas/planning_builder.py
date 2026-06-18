@@ -1,7 +1,7 @@
 """Planning tools set for subagent tool filtering.
 
 PLANNING_TOOLS defines the set of read-only tools used by the Planner
-sub-agent spec for codebase exploration.
+sub-agent spec for workspace exploration.
 """
 
 # Read-only tools allowed for planning/exploration subagents

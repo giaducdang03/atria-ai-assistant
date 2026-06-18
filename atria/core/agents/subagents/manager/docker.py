@@ -334,7 +334,7 @@ class DockerMixin:
 
         Args:
             ui_callback: Parent UI callback to wrap
-            subagent_name: Name of the subagent (e.g., "Code-Explorer", "Web-clone")
+            subagent_name: Name of the subagent (e.g., "Workspace-Explorer", "Web-clone")
             workspace_dir: Docker workspace path (e.g., "/workspace", "/testbed")
             image_name: Full Docker image name (e.g., "ghcr.io/astral-sh/uv:python3.11")
             container_id: Short container ID (e.g., "a1b2c3d4")
@@ -396,7 +396,7 @@ class DockerMixin:
         - Consistent result display
 
         Args:
-            name: Subagent name (e.g., "Code-Explorer", "Web-clone")
+            name: Subagent name (e.g., "Workspace-Explorer", "Web-clone")
             task: Task prompt for subagent
             deps: SubAgentDeps with mode_manager, approval_manager, undo_manager
             docker_handler: Pre-configured DockerToolHandler

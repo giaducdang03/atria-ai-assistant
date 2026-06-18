@@ -52,7 +52,7 @@ def ctx():
 
 
 class TestExploreFirstEnforcement:
-    """Test that non-exempt subagents are blocked until Code-Explorer has run."""
+    """Test that non-exempt subagents are blocked until Workspace-Explorer has run."""
 
     def test_blocks_planner_before_exploration(self, executor, ctx):
         """Planner spawn should be blocked when has_explored is False."""
@@ -72,9 +72,9 @@ class TestExploreFirstEnforcement:
         assert "explore" in tool_msgs[0]["content"].lower()
 
     def test_allows_code_explorer_without_prior_exploration(self, executor, ctx):
-        """Code-Explorer should always be allowed and should set has_explored."""
+        """Workspace-Explorer should always be allowed and should set has_explored."""
         tool_calls = [
-            _make_tool_call("spawn_subagent", {"subagent_type": "Code-Explorer"}, "c1"),
+            _make_tool_call("spawn_subagent", {"subagent_type": "Workspace-Explorer"}, "c1"),
         ]
         with (
             patch.object(executor, "_display_message"),
@@ -110,7 +110,7 @@ class TestExploreFirstEnforcement:
         assert ctx.has_explored is False
 
     def test_allows_planner_after_exploration(self, executor, ctx):
-        """Planner should proceed normally after Code-Explorer has run."""
+        """Planner should proceed normally after Workspace-Explorer has run."""
         ctx.has_explored = True
         tool_calls = [
             _make_tool_call("spawn_subagent", {"subagent_type": "Planner"}, "c1"),
@@ -181,7 +181,7 @@ class TestExploreFirstEnforcement:
 
 
 class TestExploreFirstReadBlocking:
-    """Test that excessive exploration reads are blocked before Code-Explorer runs."""
+    """Test that excessive exploration reads are blocked before Workspace-Explorer runs."""
 
     def test_block_reads_after_3_without_exploration(self, executor, ctx):
         """When has_explored=False and 3rd consecutive read batch arrives, block with nudge."""
@@ -204,7 +204,7 @@ class TestExploreFirstReadBlocking:
         assert len(tool_msgs) == 2
         # All tool results should contain the delegate nudge
         for msg in tool_msgs:
-            assert "Code-Explorer" in msg["content"]
+            assert "Workspace-Explorer" in msg["content"]
         # Counter should be reset
         assert ctx.consecutive_reads == 0
         assert ctx.skip_next_thinking is True

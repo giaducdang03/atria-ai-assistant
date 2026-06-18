@@ -28,7 +28,7 @@ AVOID using when:
 - The user has already specified their preference clearly
 - There's an obvious best practice or standard approach
 - The choice is trivial or easily reversible
-- You can infer the answer from context clues in the codebase
+- You can infer the answer from context clues in the workspace
 
 ## Question Structure Requirements
 

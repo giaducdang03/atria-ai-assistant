@@ -20,7 +20,7 @@ After a Planner subagent completes and returns a plan file path, call this tool 
 ## Flow
 
 1. Spawn a Planner subagent with a plan file path
-2. Planner explores the codebase and writes the plan
+2. Planner explores the workspace and writes the plan
 3. Call present_plan(plan_file_path="...") to show the plan
 4. Handle the result:
    - **approved**: Proceed with implementation

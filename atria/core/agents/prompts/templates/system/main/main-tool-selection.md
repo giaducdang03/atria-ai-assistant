@@ -25,9 +25,9 @@ When choosing tools, prefer the more specific option:
 - "Run the tests" → `run_command` (single command)
 
 **Use subagents when exploration or specialization is needed** (5+ tool calls or multiple files):
-- "How does authentication work?" → **Code-Explorer** (requires multi-file exploration)
-- "What's the architecture of module X?" → **Code-Explorer** (needs comprehensive analysis)
-- "Explain the error handling strategy" → **Code-Explorer** (multi-file trace)
+- "How does authentication work?" → **Workspace-Explorer** (requires multi-file exploration)
+- "What's the architecture of module X?" → **Workspace-Explorer** (needs comprehensive analysis)
+- "Explain the error handling strategy" → **Workspace-Explorer** (multi-file trace)
 - "Clone this website" → **Web-clone** (specialized task)
 - "Should I use Redis or Memcached?" → **ask-user** (user preference needed)
 - "Create a landing page for X" → **Web-Generator** (full web app creation)

@@ -1,12 +1,12 @@
-"""Code Explorer subagent for codebase exploration and research."""
+"""Workspace Explorer subagent for workspace exploration and research."""
 
 from atria.core.agents.prompts.loader import load_prompt
 from atria.core.agents.subagents.specs import SubAgentSpec
 
 CODE_EXPLORER_SUBAGENT = SubAgentSpec(
-    name="Code-Explorer",
+    name="Workspace-Explorer",
     description=(
-        "Deep LOCAL codebase exploration and research. Systematically searches and analyzes code to answer questions. "
+        "Deep LOCAL workspace exploration and research. Systematically searches and analyzes code to answer questions. "
         "USE FOR: Understanding code architecture, finding patterns, researching implementation details in LOCAL files. "
         "NOT FOR: External searches (GitHub repos, web) - use MCP tools or fetch_url instead."
     ),

@@ -60,14 +60,14 @@ class TestDefaultSubAgents:
         """Test that required subagent types are present."""
         names = [spec["name"] for spec in ALL_SUBAGENTS]
         assert "ask-user" in names
-        assert "Code-Explorer" in names
+        assert "Workspace-Explorer" in names
         assert "Web-clone" in names
         assert "Web-Generator" in names
         assert "Planner" in names
 
     def test_explorer_has_readonly_tools(self):
         """Test that explorer agent only has read-only tools."""
-        explorer = next(s for s in ALL_SUBAGENTS if s["name"] == "Code-Explorer")
+        explorer = next(s for s in ALL_SUBAGENTS if s["name"] == "Workspace-Explorer")
         tools = explorer.get("tools", [])
         # Should not have write/edit/run tools
         assert "write_file" not in tools
@@ -165,7 +165,7 @@ class TestSubAgentManager:
 
         available = manager.get_available_types()
         assert "ask-user" in available
-        assert "Code-Explorer" in available
+        assert "Workspace-Explorer" in available
         assert "Web-clone" in available
         assert "Web-Generator" in available
         assert "Planner" in available
@@ -376,7 +376,7 @@ class TestSpawnSubagentToolSchema:
         """Create a mock SubAgentManager."""
         manager = MagicMock()
         config1 = MagicMock()
-        config1.name = "Code-Explorer"
+        config1.name = "Workspace-Explorer"
         config1.description = "Codebase exploration agent"
         config2 = MagicMock()
         config2.name = "Web-clone"
@@ -415,7 +415,7 @@ class TestSpawnSubagentToolSchema:
         subagent_type = schema["function"]["parameters"]["properties"]["subagent_type"]
 
         assert "enum" in subagent_type
-        assert "Code-Explorer" in subagent_type["enum"]
+        assert "Workspace-Explorer" in subagent_type["enum"]
         assert "Web-clone" in subagent_type["enum"]
 
     def test_tool_schema_description_includes_subagents(self, mock_manager):
@@ -423,7 +423,7 @@ class TestSpawnSubagentToolSchema:
         schema = create_task_tool_schema(mock_manager)
         description = schema["function"]["description"]
 
-        assert "Code-Explorer" in description
+        assert "Workspace-Explorer" in description
         assert "Web-clone" in description
 
 
@@ -479,7 +479,7 @@ class TestToolRegistryIntegration:
 
         result = registry.execute_tool(
             "spawn_subagent",
-            {"description": "Test task", "subagent_type": "Code-Explorer"},
+            {"description": "Test task", "subagent_type": "Workspace-Explorer"},
         )
 
         assert result["success"] is False
@@ -495,7 +495,7 @@ class TestToolRegistryIntegration:
 
         result = registry.execute_tool(
             "spawn_subagent",
-            {"subagent_type": "Code-Explorer"},
+            {"subagent_type": "Workspace-Explorer"},
         )
 
         assert result["success"] is False

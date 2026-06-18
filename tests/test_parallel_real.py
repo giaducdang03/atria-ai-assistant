@@ -4,7 +4,7 @@
 This test verifies:
 1. Parallel agents execute correctly
 2. UI callbacks receive proper nested tool calls
-3. Agent tool filtering works (e.g., Code-Explorer doesn't run bash)
+3. Agent tool filtering works (e.g., Workspace-Explorer doesn't run bash)
 4. Status lines update properly during execution
 """
 
@@ -144,12 +144,12 @@ def test_parallel_agent_tracking():
     # Simulate parallel agents start (what react_executor does)
     agent_infos = [
         {
-            "agent_type": "Code-Explorer",
+            "agent_type": "Workspace-Explorer",
             "description": "List all Python files in src/ directory",
             "tool_call_id": "call_abc123def456",
         },
         {
-            "agent_type": "Code-Explorer",
+            "agent_type": "Workspace-Explorer",
             "description": "Search for 'async def' definitions",
             "tool_call_id": "call_xyz789ghi012",
         },
@@ -228,8 +228,8 @@ def test_parallel_agent_tracking():
 
 
 def test_code_explorer_tools():
-    """Verify Code-Explorer subagent has correct tools (no bash)."""
-    print("\n=== Testing Code-Explorer Tools ===\n")
+    """Verify Workspace-Explorer subagent has correct tools (no bash)."""
+    print("\n=== Testing Workspace-Explorer Tools ===\n")
 
     from atria.core.agents.subagents.agents import CODE_EXPLORER_SUBAGENT
 
@@ -248,10 +248,10 @@ def test_code_explorer_tools():
     assert actual_tools == expected_tools, f"Tools mismatch: {actual_tools} != {expected_tools}"
 
     # Verify bash is NOT in the list
-    assert "run_command" not in actual_tools, "Code-Explorer should NOT have run_command tool"
-    assert "bash" not in actual_tools, "Code-Explorer should NOT have bash tool"
+    assert "run_command" not in actual_tools, "Workspace-Explorer should NOT have run_command tool"
+    assert "bash" not in actual_tools, "Workspace-Explorer should NOT have bash tool"
 
-    print("\n✅ Code-Explorer has correct tools (no bash)\n")
+    print("\n✅ Workspace-Explorer has correct tools (no bash)\n")
 
 
 def test_available_subagents():
@@ -288,8 +288,8 @@ def test_tool_filtering():
     assert "write_file" in all_tool_names, "write_file should be in all tools"
     assert "read_file" in all_tool_names, "read_file should be in all tools"
 
-    # Test 2: Code-Explorer filtering (no bash/write/edit)
-    print("\n2. Testing Code-Explorer tool filtering...")
+    # Test 2: Workspace-Explorer filtering (no bash/write/edit)
+    print("\n2. Testing Workspace-Explorer tool filtering...")
     code_explorer_tools = [
         "read_file",
         "search",
@@ -308,17 +308,17 @@ def test_tool_filtering():
     # Verify bash is NOT in the filtered list
     assert (
         "run_command" not in filtered_tool_names
-    ), "run_command should NOT be in Code-Explorer tools"
+    ), "run_command should NOT be in Workspace-Explorer tools"
     assert (
         "write_file" not in filtered_tool_names
-    ), "write_file should NOT be in Code-Explorer tools"
-    assert "edit_file" not in filtered_tool_names, "edit_file should NOT be in Code-Explorer tools"
+    ), "write_file should NOT be in Workspace-Explorer tools"
+    assert "edit_file" not in filtered_tool_names, "edit_file should NOT be in Workspace-Explorer tools"
     print("   ✓ Tool filtering correctly excludes bash/write/edit")
 
-    # Test 3: Verify all Code-Explorer tools ARE present
+    # Test 3: Verify all Workspace-Explorer tools ARE present
     for tool in code_explorer_tools:
-        assert tool in filtered_tool_names, f"{tool} should be in Code-Explorer tools"
-    print("   ✓ All Code-Explorer tools are present")
+        assert tool in filtered_tool_names, f"{tool} should be in Workspace-Explorer tools"
+    print("   ✓ All Workspace-Explorer tools are present")
 
     print("\n✅ Tool filtering works correctly!\n")
 

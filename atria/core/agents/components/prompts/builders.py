@@ -335,7 +335,7 @@ class PlanningPromptBuilder:
             return ""
         return (
             f"# Working Directory Context\n\n"
-            f"You are currently exploring the codebase in: `{self._working_dir}`\n\n"
+            f"You are currently exploring the workspace in: `{self._working_dir}`\n\n"
             f"Use this as the base directory for all file operations and searches.\n"
         )
 

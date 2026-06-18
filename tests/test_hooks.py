@@ -366,9 +366,9 @@ class TestHookManager:
     def test_build_stdin_subagent_event(self):
         mgr = self._make_manager()
         payload = mgr._build_stdin(
-            HookEvent.SUBAGENT_START, "code-explorer", {"agent_task": "Find bugs"}
+            HookEvent.SUBAGENT_START, "workspace-explorer", {"agent_task": "Find bugs"}
         )
-        assert payload["agent_type"] == "code-explorer"
+        assert payload["agent_type"] == "workspace-explorer"
         assert payload["agent_task"] == "Find bugs"
 
     def test_build_stdin_compact_event(self):

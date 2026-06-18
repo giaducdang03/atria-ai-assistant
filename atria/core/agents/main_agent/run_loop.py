@@ -247,7 +247,7 @@ class RunLoopMixin:
         MAX_TODO_NUDGES = 4  # After this many todo nudges, allow completion anyway
         completion_nudge_sent = False
         interrupted = False
-        has_explored = False  # Track whether Code-Explorer has been spawned
+        has_explored = False  # Track whether Workspace-Explorer has been spawned
 
         try:
             while True:
@@ -543,8 +543,8 @@ class RunLoopMixin:
 
                 # Sequential path (original logic)
                 # Explore-first enforcement: block task subagent spawns until
-                # Code-Explorer has run
-                _EXPLORE_EXEMPT = {"Code-Explorer", "ask-user"}
+                # Workspace-Explorer has run
+                _EXPLORE_EXEMPT = {"Workspace-Explorer", "ask-user"}
                 _explore_blocked = False
                 if not has_explored:
                     for tc in tool_calls:
@@ -574,11 +574,11 @@ class RunLoopMixin:
                 if _explore_blocked:
                     continue  # Next iteration of outer while loop
 
-                # Mark explored when Code-Explorer is being spawned
+                # Mark explored when Workspace-Explorer is being spawned
                 for tc in tool_calls:
                     if tc["function"]["name"] == "spawn_subagent":
                         tc_args = json.loads(tc["function"]["arguments"])
-                        if tc_args.get("subagent_type", "") == "Code-Explorer":
+                        if tc_args.get("subagent_type", "") == "Workspace-Explorer":
                             has_explored = True
                             break
 

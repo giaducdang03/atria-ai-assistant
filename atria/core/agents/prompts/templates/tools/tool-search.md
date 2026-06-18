@@ -16,7 +16,7 @@ Search for patterns in code. Supports 'text' mode (default, regex via ripgrep) a
 - Output modes via `output_mode`: "content" shows matching lines (default), "files_with_matches" shows only file paths, "count" shows match counts per file
 - Multiline matching: by default patterns match within single lines. For cross-line patterns, set `multiline=true`
 - Limit results with `max_results` (default 50)
-- Be specific with the path to avoid slow searches across the entire codebase
+- Be specific with the path to avoid slow searches across the entire workspace
 
 ## AST mode
 
@@ -27,5 +27,5 @@ Search for patterns in code. Supports 'text' mode (default, regex via ripgrep) a
 
 - Results are capped at max_results matches and 30,000 chars total output
 - ALWAYS use search for content searching. NEVER use run_command with grep or rg — the search tool has been optimized for correct permissions and access
-- For simple, directed searches (specific class/function name), use search directly. For broader codebase exploration requiring multiple rounds, consider a subagent
+- For simple, directed searches (specific class/function name), use search directly. For broader workspace exploration requiring multiple rounds, consider a subagent
 - When to use search vs find_symbol: use search for text/regex matching across files; use find_symbol for structured code navigation via LSP (finds definitions, understands symbol hierarchy)

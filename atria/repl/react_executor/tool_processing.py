@@ -180,7 +180,7 @@ class ToolProcessingMixin:
             and all_reads
             and ctx.consecutive_reads >= 3
         ):
-            # Block execution — tell agent to use Code-Explorer instead
+            # Block execution — tell agent to use Workspace-Explorer instead
             for tc in tool_calls:
                 append_nudge(
                     ctx.messages,
@@ -192,8 +192,8 @@ class ToolProcessingMixin:
             ctx.skip_next_thinking = True
             return LoopAction.CONTINUE
 
-        # Explore-first enforcement: block task subagent spawns until Code-Explorer has run
-        EXPLORE_EXEMPT_SUBAGENTS = {"Code-Explorer", "ask-user"}
+        # Explore-first enforcement: block task subagent spawns until Workspace-Explorer has run
+        EXPLORE_EXEMPT_SUBAGENTS = {"Workspace-Explorer", "ask-user"}
         if not ctx.has_explored and not ctx.plan_approved_signal_injected:
             for tc in tool_calls:
                 if tc["function"]["name"] == "spawn_subagent":
@@ -230,7 +230,7 @@ class ToolProcessingMixin:
                 except (json.JSONDecodeError, KeyError):
                     continue
                 subagent_type = args.get("subagent_type", "")
-                if subagent_type == "Code-Explorer":
+                if subagent_type == "Workspace-Explorer":
                     ctx.has_explored = True
                 elif subagent_type == "Planner":
                     ctx.planner_pending = True

@@ -15,7 +15,7 @@ This is a read-only review task. You must NOT:
 ## Your Tools
 
 - `read_file` — Read source files for detailed analysis
-- `search` — Find patterns and related code across the codebase
+- `search` — Find patterns and related code across the workspace
 - `list_files` — Discover files by glob pattern
 - `find_symbol` — Locate function/class definitions
 - `find_referencing_symbols` — Find all call sites and usages

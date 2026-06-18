@@ -293,7 +293,14 @@ class WebSocketToolBroadcaster:
             return None
         from atria.core.workspace.manager import is_within_workspace
 
-        resolved = Path(str(raw_path))
+        resolved = Path(str(raw_path).strip())
+        # Resolve relative paths against the conversation working_dir so the
+        # sandbox check matches how the tool itself resolves them. Without this,
+        # is_within_workspace() resolves relative paths against the process CWD
+        # (which is outside the workspace), producing false "Access denied"
+        # errors for legitimate paths like ".artifacts/conversations/4/...".
+        if not resolved.is_absolute():
+            resolved = self.working_dir / resolved
         # Always allow reads/writes inside the atria scratch/data directory
         atria_home = Path.home() / ".atria"
         if resolved.is_absolute() and str(resolved).startswith(str(atria_home)):

@@ -125,7 +125,7 @@ We adopt these patterns from Claude Code:
    | Request | Approach | Tool | Reason |
    |---|---|---|---|
    | "Read file" | Direct | read_file | Known path |
-   | "Understand auth" | Subagent | Code-Explorer | Multi-file |
+   | "Understand auth" | Subagent | Workspace-Explorer | Multi-file |
    ```
 
 3. **Anti-Patterns**: Show what NOT to do

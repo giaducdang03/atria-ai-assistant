@@ -9,7 +9,7 @@ Find symbols (functions, classes, variables, methods, etc.) by name using LSP. T
 ## Name path patterns
 
 - Qualified name: "MyClass.method" finds a method within a specific class
-- Partial match: "method" finds all symbols named "method" across the codebase
+- Partial match: "method" finds all symbols named "method" across the workspace
 - Wildcards: "My*" matches all symbols starting with "My"
 - Module path: "module.Class" finds a class within a specific module
 

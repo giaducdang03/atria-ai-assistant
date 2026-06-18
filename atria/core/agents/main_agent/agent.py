@@ -169,7 +169,7 @@ class MainAgent(HttpClientMixin, LlmCallsMixin, RunLoopMixin, BaseAgent):
             working_dir: Optional working directory for file operations
             allowed_tools: Optional list of allowed tool names for filtering.
                           If None, all tools are allowed. Used by subagents
-                          to restrict available tools (e.g., Code-Explorer
+                          to restrict available tools (e.g., Workspace-Explorer
                           only gets read_file, search, list_files, etc.)
             env_context: Optional EnvironmentContext for rich system prompt
         """

@@ -4,7 +4,7 @@ description: List files in a directory or search by glob pattern
 version: 3.0.0
 -->
 
-Fast file pattern matching tool that works with any codebase size.
+Fast file pattern matching tool that works with any workspace size.
 
 ## Usage notes
 

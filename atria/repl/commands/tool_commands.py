@@ -65,7 +65,7 @@ class ToolCommands(CommandHandler):
         """Handle /init command to analyze codebase and generate ATRIA.md.
 
         Runs the main agent with an init system prompt that instructs it to use
-        spawn_subagent with Code-Explorer to explore the codebase, then write ATRIA.md.
+        spawn_subagent with Workspace-Explorer to explore the codebase, then write ATRIA.md.
 
         Args:
             command: The full command string (e.g., "/init" or "/init /path/to/project")
@@ -109,7 +109,7 @@ class ToolCommands(CommandHandler):
         )
 
         # Run main agent with the init prompt
-        # The agent will use spawn_subagent to call Code-Explorer
+        # The agent will use spawn_subagent to call Workspace-Explorer
         try:
             result = self.agent.run_sync(
                 message=task_prompt,

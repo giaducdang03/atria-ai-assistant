@@ -389,7 +389,7 @@ def build_project_instructions_block(ctx: EnvironmentContext) -> str:
         return ""
     return (
         "# Project Instructions (ATRIA.md)\n\n"
-        "Codebase and user instructions are shown below. "
+        "Workspace and user instructions are shown below. "
         "Be sure to adhere to these instructions.\n\n"
         f"<atria-md>\n{ctx.project_instructions}\n</atria-md>"
     )

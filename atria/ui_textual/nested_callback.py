@@ -278,17 +278,17 @@ def create_subagent_nested_callback(
 
     Args:
         ui_callback: Parent UI callback to wrap (can be None)
-        subagent_name: Name of the subagent for context (e.g., "Code-Explorer")
+        subagent_name: Name of the subagent for context (e.g., "Workspace-Explorer")
         docker_context: Optional Docker context for path sanitization
 
     Returns:
         NestedUICallback properly configured for the subagent, or None if ui_callback is None
 
     Examples:
-        # Non-Docker subagent (e.g., Code-Explorer)
+        # Non-Docker subagent (e.g., Workspace-Explorer)
         nested = create_subagent_nested_callback(
             ui_callback=self.ui_callback,
-            subagent_name="Code-Explorer",
+            subagent_name="Workspace-Explorer",
         )
 
         # Docker subagent (e.g., Web-clone)

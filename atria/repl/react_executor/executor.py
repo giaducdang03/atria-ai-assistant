@@ -91,7 +91,7 @@ class IterationContext:
     completion_nudge_sent: bool = False
     skip_next_thinking: bool = False
     continue_after_subagent: bool = False  # If True, don't inject stop signal after subagent
-    has_explored: bool = False  # True after Code-Explorer has been spawned
+    has_explored: bool = False  # True after Workspace-Explorer has been spawned
     planner_pending: bool = False  # True after Planner spawned, cleared after present_plan
     planner_plan_path: str = ""  # Plan file path from Planner spawn args
     # Doom-loop detection: track recent (tool_name, args_hash) tuples

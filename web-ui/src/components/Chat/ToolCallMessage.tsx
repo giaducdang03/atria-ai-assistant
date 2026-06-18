@@ -460,7 +460,7 @@ export function ToolCallMessage({ message, hasResult }: ToolCallMessageExtProps)
     }
 
     // For spawn_subagent, use subagent type as verb and description as summary
-    // to match TUI: "code-explorer(Auth flow overview)" → "▶ Code Explorer  Auth flow overview"
+    // to match TUI: "workspace-explorer(Auth flow overview)" → "▶ Workspace Explorer  Auth flow overview"
     if (toolName === 'spawn_subagent') {
       const subagentType = toolArgs?.subagent_type || toolArgs?.agent_type || '';
       if (subagentType) {

@@ -204,7 +204,7 @@ class TestSingleAgentToolLineTracking:
         )
 
         agent = SingleAgentInfo(
-            agent_type="Code-Explorer",
+            agent_type="Workspace-Explorer",
             description="test",
             tool_call_id="tc_1",
         )
