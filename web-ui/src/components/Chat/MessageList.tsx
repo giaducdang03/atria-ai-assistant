@@ -36,16 +36,16 @@ const MARKDOWN_COMPONENTS: Components = {
     );
   },
   p({ children }) {
-    return <p className="mb-3 last:mb-0 text-ink text-body leading-relaxed">{children}</p>;
+    return <p className="mb-3 last:mb-0 text-ink text-[15px] leading-relaxed">{children}</p>;
   },
   ul({ children }) {
-    return <ul className="list-disc pl-6 space-y-1.5 mb-3 text-ink text-body">{children}</ul>;
+    return <ul className="list-disc pl-6 space-y-1.5 mb-3 text-ink text-[15px]">{children}</ul>;
   },
   ol({ children }) {
-    return <ol className="list-decimal pl-6 space-y-1.5 mb-3 text-ink text-body">{children}</ol>;
+    return <ol className="list-decimal pl-6 space-y-1.5 mb-3 text-ink text-[15px]">{children}</ol>;
   },
   li({ children }) {
-    return <li className="text-ink text-body">{children}</li>;
+    return <li className="text-ink text-[15px]">{children}</li>;
   },
   strong({ children }) {
     return <strong className="font-[540] text-ink">{children}</strong>;
@@ -81,7 +81,7 @@ const UserTurn = memo(function UserTurn({ content }: { content: string }) {
     <div className="flex justify-end">
       <div className="max-w-[80%] md:max-w-[70%]">
         <div className="bg-surface-soft rounded-[18px] rounded-tr-[6px] px-4 py-3">
-          <div className="text-[15px] text-ink whitespace-pre-wrap leading-relaxed">
+          <div className="text-[15px] text-ink whitespace-pre-wrap break-words leading-relaxed">
             {content}
           </div>
         </div>
