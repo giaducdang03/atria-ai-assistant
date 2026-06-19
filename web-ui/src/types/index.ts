@@ -231,6 +231,9 @@ export interface StatusInfo {
   git_branch?: string | null;
   session_cost?: number;
   context_usage_pct?: number;
+  input_tokens?: number;
+  output_tokens?: number;
+  total_tokens?: number;
 }
 
 // Ask-user question types

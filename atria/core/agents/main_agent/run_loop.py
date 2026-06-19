@@ -3,6 +3,7 @@
 import json
 import logging
 import queue as queue_mod
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Optional
 
@@ -12,6 +13,16 @@ from atria.core.agents.components.api import (
 )
 from atria.core.agents.prompts import get_reminder
 from atria.core.utils.sound import play_finish_sound
+
+# Dedicated logger for step/total timing traces. Filter with `atria.timing`.
+_timing_logger = logging.getLogger("atria.timing")
+
+
+def _fmt_duration(seconds: float) -> str:
+    """Format an elapsed duration in a human-readable way (``456ms`` / ``1.23s``)."""
+    if seconds < 1.0:
+        return f"{seconds * 1000:.0f}ms"
+    return f"{seconds:.2f}s"
 
 PARALLELIZABLE_TOOLS = frozenset(
     {
@@ -139,14 +150,18 @@ class RunLoopMixin:
         task_monitor: Any,
         ui_callback: Any,
         is_subagent: bool,
-    ) -> dict[str, dict]:
+        iteration: int = 0,
+    ) -> tuple[dict[str, dict], float]:
         """Execute read-only tools in parallel using a thread pool.
 
         Returns:
-            Dict mapping tool_call_id to result dict.
+            Tuple of (dict mapping tool_call_id to result dict, batch wall-clock
+            seconds). Each tool's own duration is logged individually to the
+            ``atria.timing`` logger.
         """
         _logger = logging.getLogger(__name__)
         results_by_id: dict[str, dict] = {}
+        batch_start = time.monotonic()
 
         # Check interrupt before launching
         if task_monitor is not None and task_monitor.should_interrupt():
@@ -157,7 +172,7 @@ class RunLoopMixin:
                     "output": None,
                     "interrupted": True,
                 }
-            return results_by_id
+            return results_by_id, time.monotonic() - batch_start
 
         # Fire on_tool_call for ALL tools upfront (before any execution starts)
         # This lets the UI show all tools simultaneously with spinners
@@ -169,6 +184,7 @@ class RunLoopMixin:
 
         def _run_one(tc: dict) -> tuple[str, dict]:
             name = tc["function"]["name"]
+            tool_start = time.monotonic()
             try:
                 args = json.loads(tc["function"]["arguments"])
                 _logger.info(f"MainAgent parallel executing tool: {name}")
@@ -185,6 +201,13 @@ class RunLoopMixin:
                 )
             except Exception as e:
                 result = {"success": False, "error": str(e)}
+            tool_elapsed = time.monotonic() - tool_start
+            _timing_logger.info(
+                "[TIMING] iter %d · tool '%s' (parallel) took %s",
+                iteration,
+                name,
+                _fmt_duration(tool_elapsed),
+            )
             return tc["id"], result
 
         with ThreadPoolExecutor(max_workers=5) as executor:
@@ -204,7 +227,14 @@ class RunLoopMixin:
                     t_args = json.loads(tc["function"]["arguments"])
                     ui_callback.on_tool_result(t_name, t_args, result, tool_call_id=tc["id"])
 
-        return results_by_id
+        batch_elapsed = time.monotonic() - batch_start
+        _timing_logger.info(
+            "[TIMING] iter %d · parallel batch of %d tools took %s (wall-clock)",
+            iteration,
+            len(tool_calls),
+            _fmt_duration(batch_elapsed),
+        )
+        return results_by_id, batch_elapsed
 
     def run_sync(
         self,
@@ -249,12 +279,31 @@ class RunLoopMixin:
         interrupted = False
         has_explored = False  # Track whether Workspace-Explorer has been spawned
 
+        # --- Timing instrumentation -------------------------------------------
+        # Track wall-clock for the whole run plus per-step (LLM call / tools)
+        # totals so the user can see how long each step and the overall process
+        # took. Emitted via the dedicated `atria.timing` logger.
+        run_start = time.monotonic()
+        total_llm_time = 0.0
+        total_tool_time = 0.0
+        iter_start: Optional[float] = None
+        _timing_logger.info("[TIMING] Agent run started")
+
         try:
             while True:
+                # Log how long the previous iteration took before starting a new one.
+                if iter_start is not None:
+                    _timing_logger.info(
+                        "[TIMING] iter %d · total iteration took %s",
+                        iteration,
+                        _fmt_duration(time.monotonic() - iter_start),
+                    )
+
                 # Drain any injected user messages before this iteration
                 self._drain_injected_messages(messages)
 
                 iteration += 1
+                iter_start = time.monotonic()
 
                 # Safety limit only if explicitly set
                 if max_iterations is not None and iteration > max_iterations:
@@ -315,6 +364,7 @@ class RunLoopMixin:
                 api_retry_delays = [2, 5, 10]
                 result = None
                 last_api_error = ""
+                llm_start = time.monotonic()
                 for api_attempt in range(MAX_API_RETRIES):
                     result = http_client.post_json(payload, task_monitor=monitor)
                     if not result.success or result.response is None:
@@ -373,6 +423,15 @@ class RunLoopMixin:
                             "success": False,
                         }
 
+                # LLM step timing (includes any transient-error retry waits)
+                llm_elapsed = time.monotonic() - llm_start
+                total_llm_time += llm_elapsed
+                _timing_logger.info(
+                    "[TIMING] iter %d · LLM response took %s",
+                    iteration,
+                    _fmt_duration(llm_elapsed),
+                )
+
                 response_data = response.json()
                 choice = response_data["choices"][0]
                 message_data = choice["message"]
@@ -383,7 +442,11 @@ class RunLoopMixin:
                     model_info = self.config.get_model_info()
                     self._cost_tracker.record_usage(api_usage, model_info)
                     if ui_callback and hasattr(ui_callback, "on_cost_update"):
-                        ui_callback.on_cost_update(self._cost_tracker.total_cost_usd)
+                        ui_callback.on_cost_update(
+                            self._cost_tracker.total_cost_usd,
+                            self._cost_tracker.total_input_tokens,
+                            self._cost_tracker.total_output_tokens,
+                        )
 
                 raw_content = message_data.get("content")
                 cleaned_content = self._response_cleaner.clean(raw_content) if raw_content else None
@@ -514,9 +577,10 @@ class RunLoopMixin:
                 if all_parallelizable:
                     # Parallel path for read-only tools
                     # UI callbacks fire in real-time inside _execute_tools_parallel
-                    results_by_id = self._execute_tools_parallel(
-                        tool_calls, deps, task_monitor, ui_callback, is_subagent
+                    results_by_id, batch_elapsed = self._execute_tools_parallel(
+                        tool_calls, deps, task_monitor, ui_callback, is_subagent, iteration
                     )
+                    total_tool_time += batch_elapsed
 
                     # Append results to messages in original order
                     for tc in tool_calls:
@@ -628,6 +692,7 @@ class RunLoopMixin:
                     _logger.info(f"MainAgent executing tool: {tool_name}")
                     _logger.info(f"  tool_registry type: {type(self.tool_registry).__name__}")
 
+                    tool_start = time.monotonic()
                     result = self.tool_registry.execute_tool(
                         tool_name,
                         tool_args,
@@ -638,6 +703,14 @@ class RunLoopMixin:
                         task_monitor=task_monitor,
                         is_subagent=is_subagent,
                         ui_callback=ui_callback,
+                    )
+                    tool_elapsed = time.monotonic() - tool_start
+                    total_tool_time += tool_elapsed
+                    _timing_logger.info(
+                        "[TIMING] iter %d · tool '%s' took %s",
+                        iteration,
+                        tool_name,
+                        _fmt_duration(tool_elapsed),
                     )
 
                     # Notify UI callback after tool execution
@@ -665,6 +738,25 @@ class RunLoopMixin:
                         }
                     )
         finally:
+            # Log the last in-flight iteration (loop exits via return, not loop-top).
+            if iter_start is not None:
+                _timing_logger.info(
+                    "[TIMING] iter %d · total iteration took %s",
+                    iteration,
+                    _fmt_duration(time.monotonic() - iter_start),
+                )
+            total_elapsed = time.monotonic() - run_start
+            other_time = max(0.0, total_elapsed - total_llm_time - total_tool_time)
+            _timing_logger.info(
+                "[TIMING] Agent run finished: total %s over %d iteration(s) "
+                "(LLM %s, tools %s, other %s)",
+                _fmt_duration(total_elapsed),
+                iteration,
+                _fmt_duration(total_llm_time),
+                _fmt_duration(total_tool_time),
+                _fmt_duration(other_time),
+            )
+
             self._final_drain_injection_queue()
             # Reset any "doing" todos back to "todo" when the run ends abnormally
             # (interrupt, error, internet drop, timeout). This prevents stuck spinners

@@ -132,8 +132,13 @@ class UICallbackProtocol(Protocol):
         """Called to update context window usage percentage (0-100)."""
         ...
 
-    def on_cost_update(self, total_cost_usd: float) -> None:
-        """Called to update running session cost in USD."""
+    def on_cost_update(
+        self,
+        total_cost_usd: float,
+        input_tokens: int | None = None,
+        output_tokens: int | None = None,
+    ) -> None:
+        """Called to update running session cost in USD and token usage."""
         ...
 
 
@@ -262,8 +267,13 @@ class BaseUICallback:
         """Called to update context window usage percentage (0-100)."""
         pass
 
-    def on_cost_update(self, total_cost_usd: float) -> None:
-        """Called to update running session cost in USD."""
+    def on_cost_update(
+        self,
+        total_cost_usd: float,
+        input_tokens: int | None = None,
+        output_tokens: int | None = None,
+    ) -> None:
+        """Called to update running session cost in USD and token usage."""
         pass
 
 
@@ -402,8 +412,13 @@ class ForwardingUICallback(BaseUICallback):
     def on_context_usage(self, usage_pct: float) -> None:
         self._forward("on_context_usage", usage_pct)
 
-    def on_cost_update(self, total_cost_usd: float) -> None:
-        self._forward("on_cost_update", total_cost_usd)
+    def on_cost_update(
+        self,
+        total_cost_usd: float,
+        input_tokens: int | None = None,
+        output_tokens: int | None = None,
+    ) -> None:
+        self._forward("on_cost_update", total_cost_usd, input_tokens, output_tokens)
 
 
 __all__ = ["UICallbackProtocol", "BaseUICallback", "ForwardingUICallback"]

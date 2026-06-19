@@ -355,7 +355,11 @@ class IterationMixin:
             self._cost_tracker.record_usage(usage, model_info)
             # Notify UI
             if ctx.ui_callback and hasattr(ctx.ui_callback, "on_cost_update"):
-                ctx.ui_callback.on_cost_update(self._cost_tracker.total_cost_usd)
+                ctx.ui_callback.on_cost_update(
+                    self._cost_tracker.total_cost_usd,
+                    self._cost_tracker.total_input_tokens,
+                    self._cost_tracker.total_output_tokens,
+                )
             # Persist in session metadata
             session = run_sync(self.session_manager.get_current_session())
             if session is not None:

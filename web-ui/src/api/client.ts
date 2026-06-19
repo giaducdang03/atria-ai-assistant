@@ -71,7 +71,14 @@ class APIClient {
     return response.json();
   }
 
-  async resumeSession(sessionId: string): Promise<{ status: string; message: string }> {
+  async resumeSession(sessionId: string): Promise<{
+    status: string;
+    message: string;
+    session_cost?: number;
+    input_tokens?: number;
+    output_tokens?: number;
+    total_tokens?: number;
+  }> {
     const response = await fetch(`${API_BASE}/sessions/${sessionId}/resume`, {
       method: 'POST',
     });

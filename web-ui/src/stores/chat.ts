@@ -305,12 +305,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     }
 
-    // Fire-and-forget: resume on backend for config context
-    apiClient.resumeSession(sessionId).catch(() => {});
+    // Resume on backend for config context; the response carries the session's
+    // persisted token/cost totals so the TopBar reflects idle sessions too.
+    const resumePromise = apiClient.resumeSession(sessionId).catch(() => null);
 
     // Refresh status after session change
     try {
-      const configData = await apiClient.getConfig();
+      const [configData, resumeData] = await Promise.all([
+        apiClient.getConfig(),
+        resumePromise,
+      ]);
       set({
         thinkingLevel: configData.thinking_level || 'Medium',
         status: {
@@ -320,6 +324,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
           model: configData.model,
           working_dir: configData.working_dir || '',
           git_branch: configData.git_branch,
+          session_cost: resumeData?.session_cost,
+          input_tokens: resumeData?.input_tokens,
+          output_tokens: resumeData?.output_tokens,
+          total_tokens: resumeData?.total_tokens,
         },
       });
     } catch (_) { /* ignore */ }

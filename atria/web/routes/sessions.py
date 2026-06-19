@@ -185,18 +185,35 @@ async def get_current_session(user=Depends(require_authenticated_user)) -> Dict[
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def _token_usage_from_session(session) -> Dict[str, Any]:
+    """Extract persisted token/cost totals from a session's cost_tracking metadata.
+
+    Returns a dict with session_cost, input_tokens, output_tokens, and total_tokens.
+    All fields default to 0 when the session has no recorded usage yet.
+    """
+    cost_data = (session.metadata or {}).get("cost_tracking", {}) if session else {}
+    input_tokens = cost_data.get("total_input_tokens", 0)
+    output_tokens = cost_data.get("total_output_tokens", 0)
+    return {
+        "session_cost": cost_data.get("total_cost_usd", 0.0),
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "total_tokens": input_tokens + output_tokens,
+    }
+
+
 @router.post("/{session_id}/resume")
 async def resume_session(
     session_id: str,
     user=Depends(require_authenticated_user),
-) -> Dict[str, str]:
+) -> Dict[str, Any]:
     """Resume a specific session.
 
     Args:
         session_id: ID of the session to resume
 
     Returns:
-        Status response
+        Status response including persisted token/cost totals for the session.
 
     Raises:
         HTTPException: If session not found or resume fails
@@ -209,7 +226,11 @@ async def resume_session(
         if current and current.id == session_id:
             if current.owner_id is not None and current.owner_id != str(user.id):
                 raise HTTPException(status_code=403, detail="Forbidden")
-            return {"status": "success", "message": f"Session {session_id} already active"}
+            return {
+                "status": "success",
+                "message": f"Session {session_id} already active",
+                **_token_usage_from_session(current),
+            }
 
         # Try to load from disk with ownership enforcement
         success = await state.resume_session(session_id, owner_id=str(user.id))
@@ -227,7 +248,11 @@ async def resume_session(
             plan_file_path = plans_dir / f"{current.id}.md"
             state.mode_manager.set_plan_file_path(str(plan_file_path))
 
-        return {"status": "success", "message": f"Resumed session {session_id}"}
+        return {
+            "status": "success",
+            "message": f"Resumed session {session_id}",
+            **_token_usage_from_session(current),
+        }
 
     except HTTPException:
         raise

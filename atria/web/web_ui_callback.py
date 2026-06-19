@@ -364,15 +364,31 @@ class WebUICallback(BaseUICallback):
     # Cost tracking
     # ------------------------------------------------------------------
 
-    def on_cost_update(self, total_cost_usd: float) -> None:
-        """Broadcast updated session cost to the frontend."""
+    def on_cost_update(
+        self,
+        total_cost_usd: float,
+        input_tokens: int | None = None,
+        output_tokens: int | None = None,
+    ) -> None:
+        """Broadcast updated session cost and token usage to the frontend.
+
+        Args:
+            total_cost_usd: Cumulative session cost in USD.
+            input_tokens: Cumulative prompt (input) tokens for the session.
+            output_tokens: Cumulative completion (output) tokens for the session.
+        """
+        data: dict = {
+            "session_cost": total_cost_usd,
+            "session_id": self.session_id,
+        }
+        if input_tokens is not None and output_tokens is not None:
+            data["input_tokens"] = input_tokens
+            data["output_tokens"] = output_tokens
+            data["total_tokens"] = input_tokens + output_tokens
         self._broadcast(
             {
                 "type": WSMessageType.STATUS_UPDATE,
-                "data": {
-                    "session_cost": total_cost_usd,
-                    "session_id": self.session_id,
-                },
+                "data": data,
             }
         )
 

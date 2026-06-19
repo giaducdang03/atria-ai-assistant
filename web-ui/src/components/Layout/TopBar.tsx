@@ -8,6 +8,13 @@ function formatCost(cost: number): string {
   return cost < 0.01 ? `$${cost.toFixed(4)}` : `$${cost.toFixed(2)}`;
 }
 
+// Compact token count: 950 -> "950", 12_345 -> "12.3k", 1_234_567 -> "1.23M"
+function formatTokens(n: number): string {
+  if (n < 1_000) return `${n}`;
+  if (n < 1_000_000) return `${(n / 1_000).toFixed(1)}k`;
+  return `${(n / 1_000_000).toFixed(2)}M`;
+}
+
 function getContextColor(pct: number): string {
   const remaining = 100 - pct;
   if (remaining < 25) return "bg-red-500/10 text-red-600 border-red-500/20";
@@ -108,6 +115,18 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
               title={`Session cost: ${formatCost(status.session_cost)}`}
             >
               {formatCost(status.session_cost)}
+            </span>
+          )}
+
+          {/* Token usage pill — input ↑ / output ↓ / total */}
+          {status.total_tokens != null && status.total_tokens > 0 && (
+            <span
+              className={`${pillBase} cursor-default bg-bg-200 text-text-300 border-border-300/30 font-mono`}
+              title={`Tokens — Input: ${(status.input_tokens ?? 0).toLocaleString()} · Output: ${(status.output_tokens ?? 0).toLocaleString()} · Total: ${status.total_tokens.toLocaleString()}`}
+            >
+              ↑{formatTokens(status.input_tokens ?? 0)} ↓
+              {formatTokens(status.output_tokens ?? 0)} ·{" "}
+              {formatTokens(status.total_tokens)}
             </span>
           )}
 
